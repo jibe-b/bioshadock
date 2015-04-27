@@ -3,6 +3,7 @@
         <thead>
             <tr>
                 <th>ID</th>
+                <th>Description</th>
                 <th>User id</th>
                 <th>Visibility</th>
             </tr>
@@ -10,6 +11,7 @@
         <tbody>
             <tr ng-repeat="container in containers track by container.id">
                 <td ng-click="show_container(container)">{{ ::container.id }}</td>
+                <td>{{::container.meta.description}}</td>
                 <td>{{::container.user}}</td>
                 <td>{{::container.visible}}</td>
             </tr>

@@ -1,6 +1,23 @@
   <tabset justified="true">
     <tab heading="Info" active="true">
         <h2>{{container.id}}</h2>
+        <div class="row">
+            {{container.meta.description}}
+        </div>
+        <div class="row">
+            <div class="col-sm-6">
+                <div><h3>General info</h3></div>
+                <div>Architecture: {{manifest.architecture}}</div>
+                <div>Tag: {{manifest.tag}}</div>
+            </div>
+            <div class="col-sm-6">
+                <div><h3>Docker tags</h3></div>
+                <div ng-repeat="tag in tags">
+                    <i class="glyphicon glyphicon-tag"></i> {{tag}}
+                </div>
+            </div>
+        </div>
+
     </tab>
     <tab heading="Dockerfile" select="go_to_dockerfile()">
     </tab>

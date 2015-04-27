@@ -16,7 +16,8 @@ requires = [
     'pymongo',
     'PyJWT',
     'cryptography',
-    'basicauth'
+    'basicauth',
+    'urllib3'
     ]
 
 setup(name='shadock',

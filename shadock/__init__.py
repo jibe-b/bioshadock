@@ -27,6 +27,8 @@ def main(global_config, **settings):
     config.add_route('user_bind', '/user/bind')
     config.add_route('containers', '/container')
     config.add_route('containers_search', '/container/search')
+    config.add_route('container_manifest', '/container/manifest/*id')
+    config.add_route('container_tags', '/container/tags/*id')
     config.add_route('container', '/container/*id')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')

@@ -8,6 +8,7 @@ import time
 import base64
 import struct
 import re
+import urllib3
 
 from bson import json_util
 from bson.json_util import dumps
@@ -51,10 +52,85 @@ def is_logged(request):
             return None
     return None
 
+def get_token(request):
+    secret = None
+
+    private_key = None
+    passphrase = None
+    if request.registry.settings['private_key_passphrase']:
+        passphrase = request.registry.settings['private_key_passphrase']
+    with open(request.registry.settings['private_key'], 'r') as content_file:
+        private_key = load_pem_private_key(content_file.read().encode('utf-8'),
+                                          password=passphrase, backend=default_backend())
+
+
+    pub_key = None
+    pem = None
+    exponent = None
+    modulus = None
+    with open(request.registry.settings['public_key'], 'r') as content_file:
+        pub_key = content_file.read().encode('utf-8')
+
+        pub_key = load_pem_x509_certificate(pub_key, backend=default_backend())
+        pub_key = pub_key.public_key()
+        pem = pub_key.public_bytes(
+                  encoding=serialization.Encoding.PEM,
+                  format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        pub_numbers = pub_key.public_numbers()
+        exponent = pub_numbers._e
+        modulus= pub_numbers._n
+        modulus = ('%%0%dx' % (256 << 1) % modulus).decode('hex')[-256:]
+        exponent = ('%%0%dx' % (3 << 1) % exponent).decode('hex')[-3:]
+
+
+    der = None
+    with open(request.registry.settings['cacert_der'], 'rb') as content_file:
+        der = content_file.read()
+
+
+    access = []
+    if scope is not None:
+        scope = scope.split(':')
+        type = scope[0]
+        repository = scope[1]
+        actions = scope[2].split(',')
+        allowed_actions = []
+        for action in actions:
+            if action == 'push' and user_can_push(username, repository, request):
+                allowed_actions.append(action)
+            if action == 'pull' and user_can_pull(username, repository, request):
+                allowed_actions.append(action)
+        access = [
+             {
+               "type": type,
+               "name": repository,
+               "actions": allowed_actions
+             }
+        ]
+    claims = {'iss': request.registry.settings['issuer'],
+                    'sub': username,
+                    'aud': service,
+                    'access': access,
+                    'nbf': datetime.datetime.utcnow(),
+                    'iat': datetime.datetime.utcnow(),
+                    'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600),
+                    }
+    print str(claims)
+    token = jwt.encode(claims,
+                    private_key,  algorithm='RS256',
+                    headers={'jwk': {'kty': 'RSA', 'alg': 'RS256',
+                                      'n': base64.urlsafe_b64encode(modulus),
+                                      'e': base64.urlsafe_b64encode(exponent),
+                                      'x5c': [base64.b64encode(der)]
+                    }}
+                    )
+    return {'token': token}
+
 @view_config(route_name='config', renderer='json', request_method='GET')
 def config(request):
     config = {
-        'registry': request.registry.settings['dockerregistry']
+        'registry': request.registry.settings['dockerregistry'],
+        'service': request.registry.settings['service']
     }
     return config
 
@@ -92,6 +168,51 @@ def containers(request):
     for repo in repos:
         user_repos.append(repo)
     return user_repos
+
+@view_config(route_name='container_manifest', renderer='json', request_method='POST')
+def container_manifest(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+
+    form = json.loads(request.body, encoding=request.charset)
+    token = form['token']
+    tag = form['tag']
+    http = urllib3.PoolManager()
+    headers = {'Authorization': 'Bearer '+token}
+    r = http.request('GET', request.registry.settings['dockerregistry']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
+    if r.status != 200:
+        return Response('could not get the manifest', status_code = r.status)
+    return json.loads(r.data)
+
+@view_config(route_name='container_tags', renderer='json', request_method='POST')
+def container_tags(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+
+    form = json.loads(request.body, encoding=request.charset)
+    token = form['token']
+    http = urllib3.PoolManager()
+    headers = {'Authorization': 'Bearer '+token}
+    r = http.request('GET', request.registry.settings['dockerregistry']+'/v2/'+repo_id+'/tags/list', headers=headers)
+    if r.status != 200:
+        return Response('could not get the manifest', status_code = r.status)
+    return json.loads(r.data)
 
 @view_config(route_name='container', renderer='json', request_method='GET')
 def container(request):
@@ -166,7 +287,7 @@ def api_library_delete(request):
     token = jwt.encode({'repo': repo_id,
                         'user': username,
                         'acl': 'delete',
-                        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600)
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600*24)
                         }, secret)
     docker_token = "signature="+token+",repository=\""+repo_id+"\",access=write"
     headers = [("WWW-Authenticate", "Token "+docker_token.encode('utf8')),
@@ -555,10 +676,13 @@ def api2_token(request):
         pass
     if request.authorization:
         # Login request
-        (type, bearer) = request.authorization
-        username, password = decode(bearer)
-        if not valid_user(username, password, request):
-            return HTTPForbidden()
+        if not is_logged(request):
+            (type, bearer) = request.authorization
+            username, password = decode(bearer)
+            if not valid_user(username, password, request):
+                return HTTPForbidden()
+        else:
+            username = account
         secret = None
 
         private_key = None

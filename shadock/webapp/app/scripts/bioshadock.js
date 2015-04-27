@@ -66,14 +66,44 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
 })
 .controller('containerCtrl',
-    function ($scope, $route, $routeParams, $document, Container, Config) {
+    function ($scope, $route, $routeParams, $document, $http, Container, Config, Auth) {
         $scope.container_id = $routeParams.path;
+        $scope.tag = 'latest'
+        var user = Auth.getUser();
+        $scope.get_container = function(){
+            Container.get({'id': $scope.container_id}).$promise.then(function(data){
+                $scope.container = data;
+
+                var req = {
+                 method: 'POST',
+                 url: '/v2/token/',
+                 headers: {
+                   'Content-Type': 'application/json'
+                 },
+                 params: {
+                     'account': user['id'],
+                     'service': $scope.service,
+                     'scope': 'repository:'+$scope.container_id+':pull'
+                 }
+                };
+
+                $http(req).success(function(data, status, headers, config) {
+                    Container.manifest({'id': $scope.container_id},{'token': data.token, 'tag': $scope.tag}).$promise.then(function(data){
+                        $scope.manifest = data;
+                    });
+                    Container.tags({'id': $scope.container_id},{'token': data.token}).$promise.then(function(data){
+                        $scope.tags = data.tags;
+                    });
+                });
+            });
+        };
         Config.get().$promise.then(function(config) {
             $scope.registry = config['registry'];
+            $scope.service = config['service'];
+            $scope.get_container();
+
         });
-        Container.get({'id': $scope.container_id}).$promise.then(function(data){
-            $scope.container = data;
-        });
+
         $scope.go_to_dockerfile = function(){
             location.replace('#/dockerfile/'+$scope.container_id);
         }
@@ -83,9 +113,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.container_id = $routeParams.path;
         Config.get().$promise.then(function(config) {
             $scope.registry = config['registry'];
-        });
-        Container.get({'id': $scope.container_id}).$promise.then(function(data){
-            $scope.container = data;
+
+            Container.get({'id': $scope.container_id}).$promise.then(function(data){
+                $scope.container = data;
+            });
         });
         $scope.go_to_info = function(){
             location.replace('#/container/'+$scope.container_id);

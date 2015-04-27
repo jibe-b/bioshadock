@@ -35,6 +35,18 @@
                 method: 'POST',
                 isArray: true,
                 cache: false
+            },
+            manifest: {
+                url: '/container/manifest/:id',
+                method: 'POST',
+                isArray: false,
+                cache: false
+            },
+            tags: {
+                url: '/container/tags/:id',
+                method: 'POST',
+                isArray: false,
+                cache: false
             }
         });
 
