@@ -71,6 +71,22 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.tag = 'latest'
         var user = Auth.getUser();
         $scope.show_save = false;
+        $scope.newtag = '';
+        $scope.newterm = '';
+
+        $scope.addtag = function(newtag) {
+            console.log(newtag);
+            if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
+            $scope.container.meta.tags.push(newtag);
+            $scope.show_save = true;
+        }
+
+        $scope.addterm = function(newterm) {
+            if(newterm=='' ||  $scope.container.meta.terms.indexOf(newterm)>=0) { return;}
+            $scope.container.meta.terms.push(newterm);
+            $scope.show_save = true;
+        }
+
         $scope.proposesave = function(){
             $scope.show_save = true;
         }

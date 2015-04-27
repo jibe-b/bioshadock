@@ -3,6 +3,11 @@ body { padding-top: 70px; }
 td span { margin-left: 5px;}
 
 
+.tags { margin-top: 15px;
+        margin-bottom: 15px;
+    }
+.tags span { margin: 5px;}
+
 .paginate_button {
     margin-left: 3px;
 }

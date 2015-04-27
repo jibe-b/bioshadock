@@ -646,7 +646,7 @@ def user_can_push(username, repository, request):
         user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
-        if existing_repo['user'] == username:
+        if existing_repo['user'] == username or username in existing_repo['acl_push']['members']:
             return True
         else:
             return False
@@ -675,7 +675,7 @@ def user_can_pull(username, repository, request):
         user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
-        if existing_repo['user'] == username:
+        if existing_repo['user'] == username or username in existing_repo['acl_pull']['members']:
             return True
         else:
             if existing_repo['visible']:
@@ -771,7 +771,7 @@ def api2_token(request):
                         'access': access,
                         'nbf': datetime.datetime.utcnow(),
                         'iat': datetime.datetime.utcnow(),
-                        'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600),
+                        'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600*24),
                         }
         token = jwt.encode(claims,
                         private_key,  algorithm='RS256',
