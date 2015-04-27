@@ -1,14 +1,22 @@
   <tabset justified="true">
     <tab heading="Info" active="true">
-        <h2>{{container.id}}</h2>
         <div class="row">
-            {{container.meta.description}}
+            <h2>{{container.id}}</h2>
+            <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
         </div>
         <div class="row">
             <div class="col-sm-6">
+                <div><h3>Description</h3></div>
+                <div onaftersave="proposesave()" editable-textarea="container.meta.description">{{container.meta.description}}</div>
                 <div><h3>General info</h3></div>
+                <div>Author: {{container.user}}</div>
                 <div>Architecture: {{manifest.architecture}}</div>
                 <div>Tag: {{manifest.tag}}</div>
+                <div><h3>User tags</h3>
+                </div>
+                <div><h3>Ontology</h3>
+                </div>
+                <button ng-if="show_save" class="btn btn-primary"  ng-click="update_container()">Update container info</button>
             </div>
             <div class="col-sm-6">
                 <div><h3>Docker tags</h3></div>

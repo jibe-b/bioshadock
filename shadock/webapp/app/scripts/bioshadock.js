@@ -3,7 +3,7 @@
 'use strict';
 
 // Declare app level module which depends on filters, and services
-var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'ngCookies', 'ngRoute', 'ui.utils', 'ui.bootstrap', 'datatables', 'ui.codemirror'])
+var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'ngCookies', 'ngRoute', 'ui.utils', 'ui.bootstrap', 'datatables', 'ui.codemirror', 'xeditable'])
 .config(function($routeProvider, $locationProvider) {
   $routeProvider
   .when('/', {
@@ -70,6 +70,13 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.container_id = $routeParams.path;
         $scope.tag = 'latest'
         var user = Auth.getUser();
+        $scope.show_save = false;
+        $scope.proposesave = function(){
+            $scope.show_save = true;
+        }
+        $scope.update_container = function(){
+            alert('NOT yet implemented');
+        }
         $scope.get_container = function(){
             Container.get({'id': $scope.container_id}).$promise.then(function(data){
                 $scope.container = data;
