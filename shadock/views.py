@@ -755,6 +755,9 @@ def api2_token(request):
                     allowed_actions.append(action)
                 if action == 'pull' and user_can_pull(username, repository, request):
                     allowed_actions.append(action)
+                    request.registry.db_mongo['repository'].update({'id': repository},{"$inc": { "pulls": 1}})
+                if action == 'manifest' and user_can_pull(username, repository, request):
+                    allowed_actions.append('pull')
             access = [
                  {
                    "type": type,
@@ -770,7 +773,6 @@ def api2_token(request):
                         'iat': datetime.datetime.utcnow(),
                         'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600),
                         }
-        print str(claims)
         token = jwt.encode(claims,
                         private_key,  algorithm='RS256',
                         headers={'jwk': {'kty': 'RSA', 'alg': 'RS256',

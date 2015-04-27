@@ -83,7 +83,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                  params: {
                      'account': user['id'],
                      'service': $scope.service,
-                     'scope': 'repository:'+$scope.container_id+':pull'
+                     'scope': 'repository:'+$scope.container_id+':manifest'
                  }
                 };
 
