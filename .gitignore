@@ -1,0 +1,9 @@
+# Ignore ssh keys / x.509 certs
+*.der
+*.csr
+*.pem
+*.key
+*.crt
+*.pub
+
+shadock.egg-info
