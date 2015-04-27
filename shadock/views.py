@@ -7,6 +7,7 @@ import datetime
 import time
 import base64
 import struct
+import re
 
 from bson import json_util
 from bson.json_util import dumps
@@ -26,8 +27,93 @@ from basicauth import decode
 #request.registry.settings['admin']
 #user = request.registry.db_mongo['users'].find_one({'id': user_id})
 
-def valid_user(username, password):
+def valid_user(username, password, request):
+    #TODO manage auth
+    print "Add fake user for test"
+    user = request.registry.db_mongo['users'].find_one({'id': username})
+    if user is None:
+        request.registry.db_mongo['users'].insert({'id': username})
     return True
+
+
+def is_logged(request):
+    '''
+    Check if user is logged, return user info or None
+    '''
+    if request.authorization is not None:
+        try:
+            (type, bearer) = request.authorization
+            secret = request.registry.settings['secret_passphrase']
+            # If decode ok and not expired
+            user = jwt.decode(bearer, secret, audience='urn:bioshadock/auth')
+            return user['user']
+        except Exception:
+            return None
+    return None
+
+@view_config(route_name='user_is_logged', renderer='json', request_method='GET')
+def user_is_logged(request):
+    user = is_logged(request)
+    if user is None:
+        return HTTPNotFound('User not logged')
+    else:
+        return user
+
+
+@view_config(route_name='user_bind', renderer='json', request_method='POST')
+def user_bind(request):
+    form = json.loads(request.body, encoding=request.charset)
+    uid = form['uid']
+    password = form['password']
+    if not valid_user(uid, password, request):
+        return HTTPUnauthorized('Invalid credentials')
+    user = request.registry.db_mongo['users'].find_one({'id': uid})
+    secret = request.registry.settings['secret_passphrase']
+    del user['_id']
+    token = jwt.encode({'user': user,
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
+                        'aud': 'urn:bioshadock/auth'}, secret)
+    return { 'user': user, 'token': token }
+
+@view_config(route_name='containers', renderer='json', request_method='GET')
+def containers(request):
+    user = is_logged(request)
+    if user is None:
+        return HTTPForbidden()
+    repos = request.registry.db_mongo['repository'].find({'$or': [{'user': user['id']}, {'acl_pull.members': user['id']}]})
+    user_repos = []
+    for repo in repos:
+        user_repos.append(repo)
+    return user_repos
+
+@view_config(route_name='container', renderer='json', request_method='GET')
+def container(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    return repo
+
+@view_config(route_name='containers_search', renderer='json', request_method='POST')
+def containers_search(request):
+    form = json.loads(request.body, encoding=request.charset)
+    search = form['search']
+    user = is_logged(request)
+    regx = re.compile(search, re.IGNORECASE)
+    if user is None:
+            repos = request.registry.db_mongo['repository'].find({'visible': True, 'id': regx})
+    else:
+        repos = request.registry.db_mongo['repository'].find({'$or': [{'user': user['id']}, {'acl_pull.members': user['id']}], 'id': regx})
+    user_repos = []
+    for repo in repos:
+        user_repos.append(repo)
+    return user_repos
 
 @view_config(route_name='api_repositories_images_layer_access', renderer='json', request_method='GET')
 def api_repositories_images_layer_access(request):
@@ -61,7 +147,7 @@ def api_library_delete(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password) or not user_can_delete(username, repo_id, request):
+        if not valid_user(username, password, request) or not user_can_delete(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if existing_repo is None:
@@ -97,7 +183,7 @@ def api_library_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password) or not user_can_push(username, repo_id, request):
+        if not valid_user(username, password, request) or not user_can_push(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
 
@@ -136,7 +222,7 @@ def api_library_images(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password, request):
             return HTTPForbidden()
     (type, bearer) = request.authorization
     token = jwt.encode({'repo': repo_id,
@@ -164,7 +250,7 @@ def api_library_images_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password, request):
             return HTTPForbidden()
     if images:
         existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -243,7 +329,7 @@ def api_repositories_images_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password, request):
             return HTTPForbidden()
     if images:
         existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -264,7 +350,7 @@ def api_library_delete(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password) or not user_can_delete(username, repo_id, request):
+        if not valid_user(username, password, request) or not user_can_delete(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if existing_repo is None:
@@ -323,7 +409,7 @@ def api_repositories_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password)or not user_can_push(username, repo_id, request):
+        if not valid_user(username, password, request)or not user_can_push(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
 
@@ -460,7 +546,7 @@ def api2_token(request):
         # Login request
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password, request):
             return HTTPForbidden()
         secret = None
 
@@ -541,21 +627,13 @@ def api2_token(request):
 def api_users(request):
     user = json.loads(request.body, encoding=request.charset)
     print str(user)
+    user_id = None
+    existing_user = request.registry.db_mongo['users'].find_one({'id': user_id})
+    if not existing_user:
+        return HTTPForbidden("You must register first")
     return Response("User Created", status_code=201)
 
 
-@view_config(route_name='home', renderer='templates/mytemplate.pt')
+@view_config(route_name='home', renderer='json')
 def my_view(request):
-    repo_id="library/test"
-    secret = request.registry.settings['secret_passphrase']
-    token = jwt.encode({'repo': repo_id,
-                        'user': "fake",
-                        'acl': 'write',
-                        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
-                        'aud': 'urn:mydockerhub/api'}, secret)
-    docker_token = "signature="+token+",repository=\""+repo_id+"\",access=write"
-    headers = [("WWW-Authenticate", "Token "+docker_token),
-               ("X-Docker-Endpoints", "TEST"),("X-Docker-Token", docker_token)
-              ]
-    request.response.headerlist.extend(headers)
-    return Response('OK', headerlist=request.response.headerlist)
+    return HTTPFound(request.static_url('shadock:webapp/app/'))

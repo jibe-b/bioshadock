@@ -1,5 +1,8 @@
 from pyramid.config import Configurator
+from pyramid.renderers import JSON
 
+import json
+import datetime
 from pymongo import MongoClient
 from bson import json_util
 from bson.objectid import ObjectId
@@ -16,7 +19,14 @@ def main(global_config, **settings):
     dbmongo = mongo['mydockerhub']
     config.registry.db_mongo = dbmongo
     config.add_static_view('static', 'static', cache_max_age=3600)
+    config.add_static_view('app', 'shadock:webapp/app/')
     config.add_route('home', '/')
+    config.add_route('user_is_logged', '/user/logged')
+    config.add_route('user_logout', '/user/logout')
+    config.add_route('user_bind', '/user/bind')
+    config.add_route('containers', '/container')
+    config.add_route('containers_search', '/container/search')
+    config.add_route('container', '/container/*id')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')
     config.add_route('api_library_auth', '/v1/repositories/{image}/auth')
@@ -32,5 +42,12 @@ def main(global_config, **settings):
     config.add_route('api2_other', '/v2/*api')
     config.add_route('api_other', '/v1/*api')
     config.scan()
-    return config.make_wsgi_app()
 
+    json_renderer = JSON()
+    def pymongo_adapter(obj, request):
+        return json_util.default(obj)
+    json_renderer.add_adapter(ObjectId, pymongo_adapter)
+    json_renderer.add_adapter(datetime.datetime, pymongo_adapter)
+
+    config.add_renderer('json', json_renderer)
+    return config.make_wsgi_app()

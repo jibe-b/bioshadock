@@ -1,0 +1,31 @@
+<div class="row">
+  <div class="col-lg-6 pull-right">
+    <div class="input-group">
+        <input type="text" ng-model="selected" placeholder="Containers" typeahead-min-length="3" typeahead-on-select="select($item, $model, $label)" typeahead="id for id in get_containers($viewValue) | filter:$viewValue | limitTo:10" typeahead-loading="loadingContainers" class="form-control">
+        <i ng-show="loadingContainers" class="glyphicon glyphicon-refresh"></i>
+        <span class="input-group-btn">
+          <button class="btn btn-default" type="button" ng-click="search()">Search!</button>
+        </span>
+    </div><!-- /input-group -->
+  </div><!-- /.col-lg-6 -->
+</div><!-- /.row -->
+
+
+<div class="row">
+    <table id="containers" datatable="ng"  class="table table-bordered table-striped row-border hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User id</th>
+                <th>Visibility</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="container in containers track by container.id">
+                <td ng-click="show_container(container)">{{ ::container.id }}</td>
+                <td>{{::container.user}}</td>
+                <td>{{::container.visible}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
