@@ -6,4 +6,6 @@
 *.crt
 *.pub
 
+shadock/*.pyc
+
 shadock.egg-info

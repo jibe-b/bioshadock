@@ -8,8 +8,6 @@ import time
 import base64
 import struct
 
-import jose
-
 from bson import json_util
 from bson.json_util import dumps
 from bson.objectid import ObjectId
@@ -22,8 +20,6 @@ from cryptography.hazmat.primitives.serialization import (
         load_pem_private_key, load_pem_public_key, load_ssh_public_key
     )
 from cryptography.hazmat.primitives import serialization
-
-from Crypto.Util.number import long_to_bytes
 
 from basicauth import decode
 
@@ -48,7 +44,6 @@ def api_repositories_images_layer_access(request):
         token = bearer.split(',')[0].replace('signature=','')
         try:
             msg = jwt.decode(token, secret)
-            print "Token: "+str(msg)
         except Exception as e:
             print str(e)
             return HTTPForbidden(str(e))
@@ -57,8 +52,6 @@ def api_repositories_images_layer_access(request):
 
 @view_config(route_name='api_library', renderer='json', request_method='DELETE')
 def api_library_delete(request):
-    print str(request)
-    print "#Route: "+str(request.matchdict['image'])
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
     endpoints = request.registry.settings['dockerregistry']
@@ -68,7 +61,7 @@ def api_library_delete(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password) or not user_can_delete(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if existing_repo is None:
@@ -94,10 +87,7 @@ def api_library_push(request):
     Library repo
     /v1/repositories/{image}
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['image'])
     images = json.loads(request.body, encoding=request.charset)
-    print "Images: "+str(images)
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
     endpoints = request.registry.settings['dockerregistry']
@@ -107,14 +97,12 @@ def api_library_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password) or not user_can_push(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
-    if existing_repo is not None and images:
-        request.registry.db_mongo['repository'].update({'id': repo_id}, {"$set":{'images': images}})
-    else:
-        repo = { 'id' : repo_id, 'images': images, 'user': username, 'pulls': 0, 'visible': True }
-        request.registry.db_mongo['repository'].insert(repo)
+
+    request.registry.db_mongo['repository'].update({'id': repo_id}, {"$set":{'images': images}})
+
     (type, bearer) = request.authorization
 
     token = jwt.encode({'repo': repo_id,
@@ -136,8 +124,6 @@ def api_library_images(request):
     Library repo
     /v1/repositories/{image}/images
     '''
-    print str(request)
-    print "#Route: library/"+str(request.matchdict['image'])
     #images = json.loads(request.body, encoding=request.charset)
     repo_id = 'library/' + request.matchdict['image']
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -162,22 +148,15 @@ def api_library_images(request):
     headers = [("WWW-Authenticate", "Token "+docker_token.encode('utf8')),
                ("X-Docker-Endpoints", endpoints),("X-Docker-Token", docker_token.encode('utf8'))
               ]
-    request.registry.db_mongo['repository'].update({'id': repo_id},{"$inc": { "pulls": 1}}) 
+    request.registry.db_mongo['repository'].update({'id': repo_id},{"$inc": { "pulls": 1}})
     request.response.headerlist.extend(headers)
     return Response(json.dumps(existing_repo['images']), headerlist=request.response.headerlist)
 
 @view_config(route_name='api_library_images', renderer='json', request_method='PUT')
 def api_library_images_push(request):
-    print str(request)
-    print "#Route: "+str(request.matchdict['image'])
     images = json.loads(request.body, encoding=request.charset)
-    print "Images: "+str(images)
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
-    #print 'Allocate new repository: '+str(repo_id)
-    #    WWW-Authenticate: Token
-    #    signature=123abc,repository="foo/bar",access=write
-    #    X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
     endpoints = request.registry.settings['dockerregistry']
     secret = request.registry.settings['secret_passphrase']
     username = None
@@ -201,11 +180,7 @@ def api_library_auth(request):
     Library repo
     /v1/repositories/{image}/auth
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
     repo_id = 'library/'+str(request.matchdict['image'])
-    #images = json.loads(request.body, encoding=request.charset)
-    #print str(images)
     secret = request.registry.settings['secret_passphrase']
     token = None
     if request.authorization:
@@ -232,11 +207,7 @@ def api_repositories_images(request):
     Library repo
     /v1/repositories/{namespace}/{image}/images
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
     repo_id = str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
-    #images = json.loads(request.body, encoding=request.charset)
-    #print str(images)
     secret = request.registry.settings['secret_passphrase']
     token = None
     if request.authorization:
@@ -244,8 +215,7 @@ def api_repositories_images(request):
         token = bearer.split(',')[0].replace('signature=','')
         try:
             msg = jwt.decode(token, secret)
-            print "Token: "+str(msg)
-        except Exception as e: 
+        except Exception as e:
             print str(e)
             return HTTPForbidden(str(e))
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -263,16 +233,9 @@ def api_repositories_images_push(request):
     Library repo
     /v1/repositories/{namespace}/{image}/images
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['repo'])
     images = json.loads(request.body, encoding=request.charset)
-    print "Images: "+str(images)
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
-    #print 'Allocate new repository: '+str(repo_id)
-    #    WWW-Authenticate: Token
-    #    signature=123abc,repository="foo/bar",access=write
-    #    X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
     endpoints = request.registry.settings['dockerregistry']
     secret = request.registry.settings['secret_passphrase']
     username = None
@@ -292,8 +255,6 @@ def api_repositories_images_push(request):
 
 @view_config(route_name='api_library', renderer='json', request_method='DELETE')
 def api_library_delete(request):
-    print str(request)
-    print "#Route: "+str(request.matchdict['image'])
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
     endpoints = request.registry.settings['dockerregistry']
@@ -303,7 +264,7 @@ def api_library_delete(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password) or not user_can_delete(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if existing_repo is None:
@@ -327,11 +288,7 @@ def api_repositories_auth(request):
     Library repo
     /v1/repositories/{image}/auth
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
     repo_id = request.matchdict['namespace'] + '/'+str(request.matchdict['image'])
-    #images = json.loads(request.body, encoding=request.charset)
-    #print str(images)
     secret = request.registry.settings['secret_passphrase']
     token = None
     if request.authorization:
@@ -356,16 +313,9 @@ def api_repositories_push(request):
     Library repo
     /v1/repositories/{namespace}/{image}
     '''
-    print str(request)
-    print "#Route: "+str(request.matchdict['repo'])
     images = json.loads(request.body, encoding=request.charset)
-    print "Images: "+str(images)
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
-    #print 'Allocate new repository: '+str(repo_id)
-    #    WWW-Authenticate: Token
-    #    signature=123abc,repository="foo/bar",access=write
-    #    X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
     endpoints = request.registry.settings['dockerregistry']
     secret = request.registry.settings['secret_passphrase']
     username = None
@@ -373,14 +323,12 @@ def api_repositories_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password):
+        if not valid_user(username, password)or not user_can_push(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
-    if existing_repo is not None and images:
-        request.registry.db_mongo['repository'].update({'id': repo_id}, {"$set":{'images': images}})
-    else:
-        repo = { 'id' : repo_id, 'images': images, 'user': username, 'pulls': 0, 'visible': False }
-        request.registry.db_mongo['repository'].insert(repo)
+
+    request.registry.db_mongo['repository'].update({'id': repo_id}, {"$set":{'images': images}})
+
     (type, bearer) = request.authorization
 
     token = jwt.encode({'repo': repo_id,
@@ -398,17 +346,17 @@ def api_repositories_push(request):
 
 @view_config(route_name='api_other', renderer='json')
 def api_other(request):
-    print "#Other Route: "+str(request.matchdict['api'])
+    print "#Other v1 Route: "+str(request.matchdict['api'])
+    print str(request)
+    return HTTPForbidden()
+
+
+@view_config(route_name='api2_other', renderer='json')
+def api2_other(request):
+    print "#Other v2 Route: "+str(request.matchdict['api'])
     print str(request)
     return Response('OK')
 
-'''
-@view_config(route_name='api2_other', renderer='json')
-def api2_other(request):
-    print str(request.matchdict['api'])
-    print str(request)
-    return Response('OK')
-'''
 
 @view_config(route_name='api_ping', renderer='json')
 def api_ping(request):
@@ -433,6 +381,20 @@ def to_bytes(n, length):
 
 def can_push_to_library(username):
     return True
+
+def user_can_delete(username, repository, request):
+    user_repo = repository
+    repos = repository.split('/')
+    if len(repos) == 1:
+        user_repo = 'library/'+repository
+    existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
+    if existing_repo is not None:
+        if existing_repo['user'] == username:
+            return True
+        else:
+            return False
+    else:
+        return False
 
 def user_can_push(username, repository, request):
     user_repo = repository
@@ -483,7 +445,6 @@ def user_can_pull(username, repository, request):
 
 @view_config(route_name='api2_token', renderer='json')
 def api2_token(request):
-    print str(request)
     account = None
     try:
         account = request.params['account']
@@ -493,7 +454,6 @@ def api2_token(request):
     scope = None
     try:
         scope = request.params['scope']
-        print "Scope: "+str(scope)
     except Exception:
         pass
     if request.authorization:
@@ -503,32 +463,21 @@ def api2_token(request):
         if not valid_user(username, password):
             return HTTPForbidden()
         secret = None
-        #with open('/root/shadock/id_ecdsa', 'r') as content_file:
-        #    secret = load_pem_private_key(content_file.read().encode('utf-8'),
-        #                                      password=None, backend=default_backend())
+
         private_key = None
-        with open('/root/shadock/wildcard.genouest.org.key', 'r') as content_file:
+        passphrase = None
+        if request.registry.settings['private_key_passphrase']:
+            passphrase = request.registry.settings['private_key_passphrase']
+        with open(request.registry.settings['private_key'], 'r') as content_file:
             private_key = load_pem_private_key(content_file.read().encode('utf-8'),
-                                              password=None, backend=default_backend())
+                                              password=passphrase, backend=default_backend())
 
-        #cryptomodulus = None
-        #cryptoexponent = None
-        kk = None
-        with open('/root/shadock/wildcard.genouest.org.key', 'r') as content_file:
-            from Crypto.PublicKey import RSA
-            kk  = RSA.importKey(content_file.read(), passphrase=None)
-        #    pub = kk.publickey()
-        #    cryptomodulus = pub.n
-        #    cryptoexponent = pub.e
-
-        #with open('/root/shadock/wildcard.genouest.org.key', 'r') as content_file:
-        #    private_key = content_file.read().encode('utf-8')
 
         pub_key = None
         pem = None
         exponent = None
         modulus = None
-        with open('/root/shadock/wildcard.genouest.org.crt', 'r') as content_file:
+        with open(request.registry.settings['public_key'], 'r') as content_file:
             pub_key = content_file.read().encode('utf-8')
 
             pub_key = load_pem_x509_certificate(pub_key, backend=default_backend())
@@ -541,24 +490,13 @@ def api2_token(request):
             modulus= pub_numbers._n
             modulus = ('%%0%dx' % (256 << 1) % modulus).decode('hex')[-256:]
             exponent = ('%%0%dx' % (3 << 1) % exponent).decode('hex')[-3:]
-            #print "Modulus: "+str(modulus)
-            #print "Exponent: "+str(exponent)
+
+
         der = None
-        with open('/root/shadock/wildcard.genouest.org.der', 'rb') as content_file:
+        with open(request.registry.settings['cacert_der'], 'rb') as content_file:
             der = content_file.read()
 
 
-        rootder = None
-        with open('/root/shadock/GandiStandardSSLCA2.der', 'rb') as content_file:
-            rootder = content_file.read()
-
-        #pub_key = secret.public_key()
-        #curve = pub_key.public_numbers()
-        #x = long_to_bytes(curve.x,32)
-        #y = long_to_bytes(curve.y,32)
-        #print str(x)+":"+str(y)
-        #pem = pem.encode('utf-8')
-        #print str(private_key)
         access = []
         if scope is not None:
             scope = scope.split(':')
@@ -577,7 +515,7 @@ def api2_token(request):
                    "name": repository,
                    "actions": allowed_actions
                  }
-            ] 
+            ]
         claims = {'iss': request.registry.settings['issuer'],
                         'sub': username,
                         'aud': service,
@@ -588,39 +526,13 @@ def api2_token(request):
                         }
         print str(claims)
         token = jwt.encode(claims,
-                        #secret,  algorithm='ES256',
-                        #headers={'jwk': {'kty': 'EC', 'crv': 'P-256',
-                        #                  'x': base64.urlsafe_b64encode(x),
-                        #                  'y': base64.urlsafe_b64encode(y)
-                        #}}
                         private_key,  algorithm='RS256',
-                        #headers={'x5c': [base64.b64encode(pem)], 'use': 'sig'})
                         headers={'jwk': {'kty': 'RSA', 'alg': 'RS256',
-                                          #'n': base64.urlsafe_b64encode(struct.pack('256p',str(modulus))),
-                                          #'e': base64.urlsafe_b64encode(struct.pack('3p',str(exponent))),
                                           'n': base64.urlsafe_b64encode(modulus),
                                           'e': base64.urlsafe_b64encode(exponent),
                                           'x5c': [base64.b64encode(der)]
-                                          #'x5c': [base64.b64encode(der), base64.b64encode(rootder)]
                         }}
-                        #headers={'kid': 'IJCY:YEVM:CNWT:3NDP:CWAA:SLAY:PKZ5:ZUVT:22OE:NU2Q:TXG7:TNOS'}
                         )
-        ''' 
-        pub_jwk = {'k': der }
-        claims = {'iss': request.registry.settings['issuer'],
-                        'sub': username,
-                        'aud': service,
-                        'access':[],
-                        'nbf': int(time.time()),
-                        'iat': int(time.time()),
-                        'exp': int(time.time()) + 3600,
-                        }
-        jws = jose.sign(claims, pub_jwk, alg='RS256')
-        jwt = jose.serialize_compact(jws)
-        return {'token': jwt}
-        '''
-        #print pem
-        #print str(base64.urlsafe_b64encode(str(exponent)))
         return {'token': token}
     return HTTPForbidden()
 
