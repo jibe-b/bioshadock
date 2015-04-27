@@ -104,6 +104,14 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         });
 
+        $scope.show_log = function(build){
+            var dockerlog = '';
+            for(var i = 0;i < build.response.length;i++) {
+                dockerlog += '<div>'+build.response[i]+'</div>';
+            }
+                $scope.dockerlog = dockerlog;
+        };
+
         $scope.go_to_dockerfile = function(){
             location.replace('#/dockerfile/'+$scope.container_id);
         }

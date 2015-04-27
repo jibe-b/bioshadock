@@ -7,6 +7,8 @@ from pymongo import MongoClient
 from bson import json_util
 from bson.objectid import ObjectId
 
+import redis
+
 
 
 def main(global_config, **settings):
@@ -18,6 +20,10 @@ def main(global_config, **settings):
     mongo = MongoClient('mongodb://localhost:27017/')
     dbmongo = mongo['mydockerhub']
     config.registry.db_mongo = dbmongo
+
+    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    config.registry.db_redis = r
+
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_static_view('app', 'shadock:webapp/app/')
     config.add_route('home', '/')

@@ -17,7 +17,9 @@ requires = [
     'PyJWT',
     'cryptography',
     'basicauth',
-    'urllib3'
+    'urllib3',
+    'redis',
+    'docker-py'
     ]
 
 setup(name='shadock',

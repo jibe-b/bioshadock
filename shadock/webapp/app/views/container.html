@@ -21,4 +21,22 @@
     </tab>
     <tab heading="Dockerfile" select="go_to_dockerfile()">
     </tab>
+    <tab heading="Builds" >
+        <div class="row">
+            <div class="col-sm-6">
+                <div><h3>Dockerfile builds</h3></div>
+                <div ng-repeat="build in container.builds">
+                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
+                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div><h3>Dockerfile builds log</h3></div>
+                <div ng-bind-html="dockerlog">
+                </div>
+            </div>
+
+        </div>
+
+    </tab>
   </tabset>

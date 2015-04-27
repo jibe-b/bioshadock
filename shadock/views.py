@@ -206,14 +206,14 @@ def container_dockerfile(request):
             return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
     dockerfile = form['dockerfile']
-    request.registry.db_mongo['repository'].update({'id': repo_id},{'$set': {'container.meta.Dockerfile': dockerfile}})
+    request.registry.db_mongo['repository'].update({'id': repo_id},{'$set': {'meta.Dockerfile': dockerfile}})
     newbuild = {
         'id': repo_id,
         'date': datetime.datetime.now(),
         'dockerfile': dockerfile,
         'user': user['id']
     }
-    request.registry.db_mongo['builds'].update({'id': 'main'}, {'$push': {'queue': newbuild}}, upsert=True)
+    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
 
 
