@@ -36,3 +36,5 @@ openssl x509 -in GSRootCA-2014.cer -inform PEM -text -noout
 
 
 
+
+Docker client: docker -D -H 127.0.0.1:2375 push cloud-30.genouest.org/testosallou

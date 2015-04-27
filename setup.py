@@ -15,7 +15,7 @@ requires = [
     'waitress',
     'pymongo',
     'PyJWT',
-    'cryptography'
+    'cryptography',
     'basicauth'
     ]
 
