@@ -40,9 +40,15 @@
 
     }
 
+    function Config($resource) {
+        return $resource('/config');
+
+    }
+
 
   angular.module('bioshadock.resources', ['ngResource'])
       .factory('User', User)
       .factory('Container', Container)
+      .factory('Config', Config)
 
 }());

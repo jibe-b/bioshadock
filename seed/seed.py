@@ -15,8 +15,7 @@ repo = { 'id' : 'test/test1', 'user': 'osallou', 'pulls': 0, 'visible': False,
                    'tags': [],
                    'terms': [],
                    'description': None,
-                   'Dockerfile': None
-                 },
+                   'Dockerfile': "FROM ubuntu\nMAINTAINER Victor Vieux <victor@docker.com>\nLABEL Description=\"This image is used to start the foobar executable\" Vendor=\"ACME Products\" Version=\"1.0\"\nRUN apt-get update && apt-get install -y inotify-tools nginx apache2 openssh-server"                 },
          'acl_push': { 'members': [], 'groups': [] },
          'acl_pull': { 'members': [], 'groups': [] },
          'builds': []

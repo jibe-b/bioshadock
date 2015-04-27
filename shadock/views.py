@@ -51,6 +51,13 @@ def is_logged(request):
             return None
     return None
 
+@view_config(route_name='config', renderer='json', request_method='GET')
+def config(request):
+    config = {
+        'registry': request.registry.settings['dockerregistry']
+    }
+    return config
+
 @view_config(route_name='user_is_logged', renderer='json', request_method='GET')
 def user_is_logged(request):
     user = is_logged(request)
@@ -98,6 +105,10 @@ def container(request):
             return HTTPForbidden()
         if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
+        if repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
+            repo['user_can_push'] = True
+        else:
+            repo['user_can_push'] = False
     return repo
 
 @view_config(route_name='containers_search', renderer='json', request_method='POST')

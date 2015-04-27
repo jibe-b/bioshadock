@@ -22,6 +22,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/container.html',
     controller: 'containerCtrl'
   })
+  .when('/dockerfile/:path*', {
+    templateUrl: 'views/dockerfile.html',
+    controller: 'containerDockerFileCtrl'
+  })
   .when('/login', {
     templateUrl: 'views/login.html',
     controller: 'loginCtrl'
@@ -62,8 +66,33 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
 })
 .controller('containerCtrl',
-    function ($scope, $route, $routeParams, Container) {
-        $scope.container = $routeParams.path;
+    function ($scope, $route, $routeParams, $document, Container, Config) {
+        $scope.container_id = $routeParams.path;
+        Config.get().$promise.then(function(config) {
+            $scope.registry = config['registry'];
+        });
+        Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $scope.container = data;
+        });
+        $scope.go_to_dockerfile = function(){
+            location.replace('#/dockerfile/'+$scope.container_id);
+        }
+})
+.controller('containerDockerFileCtrl',
+    function ($scope, $route, $routeParams, $document, Container, Config) {
+        $scope.container_id = $routeParams.path;
+        Config.get().$promise.then(function(config) {
+            $scope.registry = config['registry'];
+        });
+        Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $scope.container = data;
+        });
+        $scope.go_to_info = function(){
+            location.replace('#/container/'+$scope.container_id);
+        }
+        $scope.update_dockerfile = function() {
+            alert("TODO");
+        }
 })
 .controller('mycontainersCtrl',
     function ($scope, $route, Container) {
