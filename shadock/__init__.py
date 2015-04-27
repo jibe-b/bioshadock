@@ -1,0 +1,36 @@
+from pyramid.config import Configurator
+
+from pymongo import MongoClient
+from bson import json_util
+from bson.objectid import ObjectId
+
+
+
+def main(global_config, **settings):
+    """ This function returns a Pyramid WSGI application.
+    """
+    config = Configurator(settings=settings)
+    config.include('pyramid_chameleon')
+
+    mongo = MongoClient('mongodb://localhost:27017/')
+    dbmongo = mongo['mydockerhub']
+    config.registry.db_mongo = dbmongo
+    config.add_static_view('static', 'static', cache_max_age=3600)
+    config.add_route('home', '/')
+    config.add_route('api_users', '/v1/users/')
+    config.add_route('api_library', '/v1/repositories/{image}/')
+    config.add_route('api_library_auth', '/v1/repositories/{image}/auth')
+    config.add_route('api_library_images', '/v1/repositories/{image}/images')
+    config.add_route('api_repositories_images_get', '/v1/repositories/{namespace}/{image}/images')
+    config.add_route('api_repositories_images_put', '/v1/repositories/{namespace}/{image}/images')
+    config.add_route('api_repositories_images_layer_access', '/v1/repositories/{namespace}/{image}/layer/{id}/access')
+    config.add_route('api_repositories', '/v1/repositories/{namespace}/{image}/')
+    config.add_route('api_repositories_auth', '/v1/repositories/{namespace}/{image}/auth')
+    config.add_route('api_ping', '/v1/_ping')
+    config.add_route('api2_ping', '/v2/_ping')
+    config.add_route('api2_token', '/v2/token/')
+    config.add_route('api2_other', '/v2/*api')
+    config.add_route('api_other', '/v1/*api')
+    config.scan()
+    return config.make_wsgi_app()
+
