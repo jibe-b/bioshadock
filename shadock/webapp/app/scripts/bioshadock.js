@@ -122,7 +122,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             location.replace('#/container/'+$scope.container_id);
         }
         $scope.update_dockerfile = function() {
-            alert("TODO");
+            Container.dockerFile({'id': $scope.container_id},{'dockerfile': $scope.container.meta.Dockerfile}).$promise.then(function(data){
+                $scope.msg = "New build requested after Dockerfile update";
+            });
         }
 })
 .controller('mycontainersCtrl',

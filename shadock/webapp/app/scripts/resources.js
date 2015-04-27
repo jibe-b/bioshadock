@@ -47,6 +47,12 @@
                 method: 'POST',
                 isArray: false,
                 cache: false
+            },
+            dockerFile: {
+                url: '/container/dockerfile/:id',
+                method: 'POST',
+                isArray: false,
+                cache: false
             }
         });
 

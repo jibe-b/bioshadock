@@ -192,6 +192,31 @@ def container_manifest(request):
         return Response('could not get the manifest', status_code = r.status)
     return json.loads(r.data)
 
+@view_config(route_name='container_dockerfile', renderer='json', request_method='POST')
+def container_dockerfile(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    form = json.loads(request.body, encoding=request.charset)
+    dockerfile = form['dockerfile']
+    request.registry.db_mongo['repository'].update({'id': repo_id},{'$set': {'container.meta.Dockerfile': dockerfile}})
+    newbuild = {
+        'id': repo_id,
+        'date': datetime.datetime.now(),
+        'dockerfile': dockerfile,
+        'user': user['id']
+    }
+    request.registry.db_mongo['builds'].update({'id': 'main'}, {'$push': {'queue': newbuild}}, upsert=True)
+    return {}
+
+
 @view_config(route_name='container_tags', renderer='json', request_method='POST')
 def container_tags(request):
     user = is_logged(request)
