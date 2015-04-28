@@ -28,6 +28,11 @@ from basicauth import decode
 #request.registry.settings['admin']
 #user = request.registry.db_mongo['users'].find_one({'id': user_id})
 
+
+def is_admin(username, request):
+    #TODO
+    return False
+
 def valid_user(username, password, request):
     #TODO manage auth
     print "Add fake user for test"
@@ -52,79 +57,6 @@ def is_logged(request):
             return None
     return None
 
-def get_token(request):
-    secret = None
-
-    private_key = None
-    passphrase = None
-    if request.registry.settings['private_key_passphrase']:
-        passphrase = request.registry.settings['private_key_passphrase']
-    with open(request.registry.settings['private_key'], 'r') as content_file:
-        private_key = load_pem_private_key(content_file.read().encode('utf-8'),
-                                          password=passphrase, backend=default_backend())
-
-
-    pub_key = None
-    pem = None
-    exponent = None
-    modulus = None
-    with open(request.registry.settings['public_key'], 'r') as content_file:
-        pub_key = content_file.read().encode('utf-8')
-
-        pub_key = load_pem_x509_certificate(pub_key, backend=default_backend())
-        pub_key = pub_key.public_key()
-        pem = pub_key.public_bytes(
-                  encoding=serialization.Encoding.PEM,
-                  format=serialization.PublicFormat.SubjectPublicKeyInfo)
-        pub_numbers = pub_key.public_numbers()
-        exponent = pub_numbers._e
-        modulus= pub_numbers._n
-        modulus = ('%%0%dx' % (256 << 1) % modulus).decode('hex')[-256:]
-        exponent = ('%%0%dx' % (3 << 1) % exponent).decode('hex')[-3:]
-
-
-    der = None
-    with open(request.registry.settings['cacert_der'], 'rb') as content_file:
-        der = content_file.read()
-
-
-    access = []
-    if scope is not None:
-        scope = scope.split(':')
-        type = scope[0]
-        repository = scope[1]
-        actions = scope[2].split(',')
-        allowed_actions = []
-        for action in actions:
-            if action == 'push' and user_can_push(username, repository, request):
-                allowed_actions.append(action)
-            if action == 'pull' and user_can_pull(username, repository, request):
-                allowed_actions.append(action)
-        access = [
-             {
-               "type": type,
-               "name": repository,
-               "actions": allowed_actions
-             }
-        ]
-    claims = {'iss': request.registry.settings['issuer'],
-                    'sub': username,
-                    'aud': service,
-                    'access': access,
-                    'nbf': datetime.datetime.utcnow(),
-                    'iat': datetime.datetime.utcnow(),
-                    'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600),
-                    }
-    print str(claims)
-    token = jwt.encode(claims,
-                    private_key,  algorithm='RS256',
-                    headers={'jwk': {'kty': 'RSA', 'alg': 'RS256',
-                                      'n': base64.urlsafe_b64encode(modulus),
-                                      'e': base64.urlsafe_b64encode(exponent),
-                                      'x5c': [base64.b64encode(der)]
-                    }}
-                    )
-    return {'token': token}
 
 @view_config(route_name='config', renderer='json', request_method='GET')
 def config(request):
@@ -179,7 +111,7 @@ def container_manifest(request):
     if not repo['visible']:
         if user is None:
             return HTTPForbidden()
-        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
 
     form = json.loads(request.body, encoding=request.charset)
@@ -202,7 +134,7 @@ def container_dockerfile(request):
     if not repo['visible']:
         if user is None:
             return HTTPForbidden()
-        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
     dockerfile = form['dockerfile']
@@ -227,7 +159,7 @@ def container_tags(request):
     if not repo['visible']:
         if user is None:
             return HTTPForbidden()
-        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
 
     form = json.loads(request.body, encoding=request.charset)
@@ -239,6 +171,37 @@ def container_tags(request):
         return Response('could not get the manifest', status_code = r.status)
     return json.loads(r.data)
 
+@view_config(route_name='container', renderer='json', request_method='POST')
+def container_update(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if user is None:
+        return HTTPForbidden()
+    if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
+        return HTTPForbidden()
+    form = json.loads(request.body, encoding=request.charset)
+    updates = {
+        'acl_push.members': form['acl_push']['members'],
+        'acl_pull.members': form['acl_pull']['members'],
+        'meta.description': form['meta']['description'],
+        'meta.tags': form['meta']['tags'],
+        'meta.terms': form['meta']['terms'],
+    }
+    repo['acl_push']['members'] = form['acl_push']['members']
+    repo['acl_pull']['members'] = form['acl_pull']['members']
+    repo['meta']['description'] = form['meta']['description']
+    repo['meta']['tags'] = form['meta']['tags']
+    repo['meta']['terms'] = form['meta']['terms']
+    if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
+        repo['user_can_push'] = True
+    else:
+        repo['user_can_push'] = False
+    request.registry.db_mongo['repository'].update({'id': repo_id}, {'$set': updates})
+    return repo
+
 @view_config(route_name='container', renderer='json', request_method='GET')
 def container(request):
     user = is_logged(request)
@@ -249,9 +212,9 @@ def container(request):
     if not repo['visible']:
         if user is None:
             return HTTPForbidden()
-        if repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
-        if repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
+        if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
             repo['user_can_push'] = True
         else:
             repo['user_can_push'] = False

@@ -19,7 +19,8 @@ requires = [
     'basicauth',
     'urllib3',
     'redis',
-    'docker-py'
+    'docker-py',
+    'elasticsearch'
     ]
 
 setup(name='shadock',

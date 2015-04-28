@@ -75,7 +75,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.newterm = '';
 
         $scope.addtag = function(newtag) {
-            console.log(newtag);
             if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
             $scope.container.meta.tags.push(newtag);
             $scope.show_save = true;
@@ -87,11 +86,61 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             $scope.show_save = true;
         }
 
+        $scope.add_member_push = function(member) {
+            if(member=='' ||  $scope.container.acl_push.members.indexOf(member)>=0) { return;}
+            $scope.container.acl_push.members.push(member);
+            $scope.container.acl_pull.members.push(member);
+            $scope.show_save = true;
+        }
+
+        $scope.add_member_pull = function(member) {
+            if(member=='' ||  $scope.container.acl_pull.members.indexOf(member)>=0) { return;}
+            $scope.container.acl_pull.members.push(member);
+            $scope.show_save = true;
+        }
+
+        $scope.delete_tag = function(elt) {
+            var index =  $scope.container.meta.tags.indexOf(elt);
+            if (index > -1) {
+                 $scope.container.meta.tags.splice(index, 1);
+                 $scope.show_save = true;
+            }
+        };
+
+        $scope.delete_term = function(elt) {
+            var index =  $scope.container.meta.terms.indexOf(elt);
+            if (index > -1) {
+                 $scope.container.meta.terms.splice(index, 1);
+                 $scope.show_save = true;
+            }
+        };
+
+        $scope.delete_member_pull = function(elt) {
+            var index =  $scope.container.acl_pull.members.indexOf(elt);
+            if (index > -1) {
+                 $scope.container.acl_pull.members.splice(index, 1);
+                 $scope.show_save = true;
+            }
+        };
+
+
+        $scope.delete_member_push = function(elt) {
+            var index =  $scope.container.acl_push.members.indexOf(elt);
+            if (index > -1) {
+                 $scope.container.acl_push.members.splice(index, 1);
+                 $scope.show_save = true;
+            }
+        };
+
         $scope.proposesave = function(){
             $scope.show_save = true;
         }
-        $scope.update_container = function(){
-            alert('NOT yet implemented');
+        $scope.update_container = function(container){
+             container.$save({'id': container.id}).then(function(data){
+                 $scope.msg = "Container updated";
+                 $scope.show_save = false;
+                 console.log($scope.container);
+             });
         }
         $scope.get_container = function(){
             Container.get({'id': $scope.container_id}).$promise.then(function(data){

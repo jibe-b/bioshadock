@@ -9,6 +9,11 @@
                 <div><h3>Description</h3></div>
                 <div onaftersave="proposesave()" editable-textarea="container.meta.description">{{container.meta.description}}</div>
                 <div><h3>General info</h3></div>
+                <div class="checkbox" ng-if="container.user_can_push">
+                    <label>
+                      <input type="checkbox" ng-model="container.visible"> Public
+                    </label>
+                </div>
                 <div>Author: {{container.user}}</div>
                 <div>Architecture: {{manifest.architecture}}</div>
                 <div>Tag: {{manifest.tag}}</div>
@@ -21,7 +26,7 @@
                       <button type="button" ng-click="$parent.addtag(newtag)" class="btn btn-primary">Add</button>
                     </form>
                     <div class="row tags">
-                        <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}}</span>
+                        <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}} <span ng-if="container.user_can_push"><i ng-click="delete_tag(tag)" class="glyphicon glyphicon-trash"> </i></span></span>
                     </div>
 
                 </div>
@@ -34,11 +39,11 @@
                       <button type="button" ng-click="$parent.addterm(newterm)" class="btn btn-primary">Add</button>
                     </form>
                     <div class="row tags">
-                        <span ng-repeat="term in container.meta.terms" class="label label-info">{{term}}</span>
+                        <span ng-repeat="term in container.meta.terms" class="label label-info">{{term}} <span ng-if="container.user_can_push"><i ng-click="delete_term(term)" class="glyphicon glyphicon-trash"> </i></span></span>
                     </div>
                 </div>
                 <div class="row">
-                    <button ng-if="show_save && container.user_can_push" class="btn btn-primary"  ng-click="update_container()">Update container info</button>
+                    <button type="button" ng-if="show_save && container.user_can_push" class="btn btn-primary"  ng-click="update_container(container)">Update container info</button>
                 </div>
             </div>
             <div class="col-sm-6">
@@ -55,10 +60,10 @@
                     <label for="member_push">User id</label>
                     <input type="text" class="form-control"  ng-model="member_push" id="member_push" placeholder="Jane Doe">
                   </div>
-                  <button type="button" class="btn btn-primary">Add</button>
+                  <button ng-click="$parent.add_member_push(member_push)" type="button" class="btn btn-primary">Add</button>
                 </form>
                 <div ng-repeat="member in container.acl_push.members">
-                     <i class="glyphicon glyphicon-user"></i> {{member}}
+                     <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_push(member)" class="glyphicon glyphicon-trash"> </i></span>
                 </div>
                 <div><h3>Pull Members</h3></div>
                 <form ng-if="container.user_can_push" class="form-inline">
@@ -66,10 +71,10 @@
                     <label for="member_pull">User id</label>
                     <input type="text" class="form-control" ng-model="member_pull" id="member_pull" placeholder="Jane Doe">
                   </div>
-                  <button type="button" class="btn btn-primary">Add</button>
+                  <button ng-click="$parent.add_member_pull(member_pull)" type="button" class="btn btn-primary">Add</button>
                 </form>
                 <div ng-repeat="member in container.acl_pull.members">
-                     <i class="glyphicon glyphicon-user"></i> {{member}}
+                     <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_pull(member)" class="glyphicon glyphicon-trash"> </i></span>
                 </div>
             </div>
             </div>
