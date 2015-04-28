@@ -54,11 +54,18 @@
                         </a>
                     </li>
                     <li ng-if="is_logged">
-                        <a href="#/my/containers" active-link="active">
+                        <a href="#/my/containers">
                             <i class="glyphicon glyphicon-filter"></i>
                             My containers
                         </a>
                     </li>
+                    <li ng-if="is_logged">
+                        <a href="#/my/new">
+                            <i class="glyphicon glyphicon-plus"></i>
+                            New container
+                        </a>
+                    </li>
+                </ul>
                 <ul class="nav navbar-nav pull-right">
                     <li ng-if="! is_logged">
                         <a href="#/login">

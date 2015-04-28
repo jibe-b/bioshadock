@@ -33,6 +33,10 @@ def is_admin(username, request):
     #TODO
     return False
 
+def can_push_to_library(username, request):
+    #TODO
+    return True
+
 def valid_user(username, password, request):
     #TODO manage auth
     print "Add fake user for test"
@@ -176,10 +180,10 @@ def container_update(request):
     user = is_logged(request)
     repo_id = '/'.join(request.matchdict['id'])
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
-    if repo is None:
-        return HTTPNotFound()
     if user is None:
         return HTTPForbidden()
+    if repo is None:
+        return HTTPNotFound()
     if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
         return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
@@ -219,6 +223,30 @@ def container(request):
         else:
             repo['user_can_push'] = False
     return repo
+
+@view_config(route_name='containers_new', renderer='json', request_method='POST')
+def containers_new(request):
+    user = is_logged(request)
+    if user is None:
+        return HTTPForbidden()
+    form = json.loads(request.body, encoding=request.charset)
+    repo_id = form['name']
+    if user_can_push(user['id'], repo_id, request):
+        request.registry.db_mongo['repository'].update({'id': repo_id},
+                        {'$set': {'meta.description': form['description'],
+                                  'meta.Dockerfile': form['dockerfile']}
+                        })
+        newbuild = {
+            'id': repo_id,
+            'date': datetime.datetime.now(),
+            'dockerfile': form['dockerfile'],
+            'user': user['id']
+        }
+        request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+        repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+        return repo
+    else:
+        return HTTPForbidden()
 
 @view_config(route_name='containers_search', renderer='json', request_method='POST')
 def containers_search(request):
@@ -606,6 +634,8 @@ def user_can_push(username, repository, request):
     user_repo = repository
     repos = repository.split('/')
     if len(repos) == 1:
+        if not can_push_to_library(username, request):
+            return False
         user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:

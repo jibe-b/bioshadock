@@ -30,6 +30,12 @@
 
     function Container($resource) {
         return $resource('/container/:id', {}, {
+            create_new: {
+                url: '/container/new',
+                method: 'POST',
+                isArray: false,
+                cache: false
+            },
             search: {
                 url: '/container/search',
                 method: 'POST',

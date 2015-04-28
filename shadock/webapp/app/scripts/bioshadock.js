@@ -18,6 +18,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/mycontainers.html',
     controller: 'mycontainersCtrl'
   })
+  .when('/my/new', {
+    templateUrl: 'views/newcontainer.html',
+    controller: 'newcontainerCtrl'
+  })
   .when('/container/:path*', {
     templateUrl: 'views/container.html',
     controller: 'containerCtrl'
@@ -63,6 +67,62 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 }])
 .controller('welcomeCtrl',
     function ($scope, $route) {
+
+})
+.controller('newcontainerCtrl',
+    function ($scope, $route, $routeParams, Container, Auth) {
+    var user = Auth.getUser();
+    $scope.containerName = '';
+    $scope.containerDescription = '';
+    $scope.containerDockerfile = '';
+
+    $scope.create_container = function() {
+        if($scope.containerName == '') {
+            $scope.msg = "Missing or empty name";
+            return;
+        }
+        if($scope.containerName.split('/').length==1) {
+            $scope.msg = "Name must contain at least one '/' eg namespace/containername"
+            return;
+        }
+        if($scope.containerDescription == '') {
+            $scope.msg = "Missing or empty description";
+            return;
+        }
+        if($scope.containerDockerfile == '') {
+            $scope.msg = "Missing or empty Docker file";
+            return;
+        }
+        Container.get({'id': $scope.containerName}).$promise.then(function(data){
+            $scope.msg = "Name already exists";
+        }, function(error){
+            if(error.status != 404) {
+                $scope.msg = "Name already exists or cannot be used";
+            }
+            else {
+                Container.create_new({},
+                    {'name':  $scope.containerName,
+                    'description': $scope.containerDescription,
+                    'dockerfile': $scope.containerDockerfile
+                    }).$promise.then(function(data){
+                    location.replace('#/container/'+$scope.containerName);
+                }, function(error) {
+                    $scope.msg = error.statusText;
+                });
+            }
+        });
+        /*
+        Container.create_new({},
+            {'name':  $scope.containerName,
+            'description': $scope.containerDescription,
+            'dockerfile': $scope.containerDockerfile
+            }).$promise.then(function(data){
+            location.replace('#/container/'+$scope.containerName);
+        }, function(error) {
+            $scope.msg = error;
+        });
+        */
+    }
 
 })
 .controller('containerCtrl',
@@ -139,7 +199,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
              container.$save({'id': container.id}).then(function(data){
                  $scope.msg = "Container updated";
                  $scope.show_save = false;
-                 console.log($scope.container);
              });
         }
         $scope.get_container = function(){
