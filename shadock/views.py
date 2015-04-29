@@ -653,9 +653,11 @@ def user_can_delete(username, repository, request):
         return False
 
 def user_can_push(username, repository, request):
+    if username == 'anonymous':
+        return False
     user_repo = repository
     repos = repository.split('/')
-    if len(repos) == 1:
+    if len(repos) == 1 or repos[0] == 'library':
         if not can_push_to_library(username, request):
             return False
         user_repo = 'library/'+repository
@@ -720,7 +722,9 @@ def api2_token(request):
         if not is_logged(request):
             (type, bearer) = request.authorization
             username, password = decode(bearer)
-            if not valid_user(username, password, request):
+            if username == 'anonymous':
+                username = account
+            elif not valid_user(username, password, request):
                 return HTTPForbidden()
         else:
             username = account

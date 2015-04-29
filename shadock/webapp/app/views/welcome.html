@@ -2,4 +2,13 @@
 
 <div class="row">
     <p>Bla bla bla</p>
+    <div class="alert alert-info">To fix SSL certificates, you must download the root certificate https://www.gandi.net/static/CAs/GandiProSSLCA.pem and add it to your local certificates.
+       <pre>
+Copy files in /etc/ssl/certificates
+update-ca-certificates
+restart docker daemon
+
+Or append the content of the file in /etc/ssl/certs/ca-certificates.crt
+       </pre>
+    </div>
 </div>
