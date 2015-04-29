@@ -80,7 +80,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         });
 })
 .controller('newcontainerCtrl',
-    function ($scope, $route, $routeParams, Container, Auth) {
+    function ($scope, $route, $routeParams, $http, Container, Auth) {
     var user = Auth.getUser();
     $scope.containerName = '';
     $scope.containerDescription = '';
@@ -110,7 +110,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             $scope.msg = "Missing or empty Docker file";
             return;
         }
-        Container.get({'id': $scope.containerName}).$promise.then(function(data){
+        //Container.get({'id': $scope.containerName}).$promise.then(function(data){
+        $http.get('/container/'+$scope.containerName).success(function(data){
             $scope.msg = "Name already exists";
         }, function(error){
             if(error.status != 404) {
@@ -214,7 +215,16 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             $scope.show_save = true;
         }
         $scope.update_container = function(container){
-             container.$save({'id': container.id}).then(function(data){
+            var req = {
+             method: 'POST',
+             url: '/container/'+$scope.container_id,
+             headers: {
+               'Content-Type': 'application/json'
+             },
+             data: container
+            };
+            $http(req).success(function(data, status, headers, config) {
+            //container.$save({'id': container.id}).then(function(data){
                  $scope.msg = "Container updated";
                  $scope.show_save = false;
              });
@@ -290,7 +300,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         }
 })
 .controller('containerDockerFileCtrl',
-    function ($scope, $route, $routeParams, $document, Container, Config) {
+    function ($scope, $route, $routeParams, $document, $http, Container, Config) {
         $scope.container_id = $routeParams.path;
 
         $scope.cmOption = {
@@ -301,8 +311,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         Config.get().$promise.then(function(config) {
             $scope.registry = config['registry'];
-
-            Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $http.get('/container/'+$scope.container_id).success(function(data){
+            //Container.get({'id': $scope.container_id}).$promise.then(function(data){
                 $scope.container = data;
             });
         });
@@ -310,7 +320,16 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             location.replace('#/container/'+$scope.container_id);
         }
         $scope.update_dockerfile = function() {
-            Container.dockerFile({'id': $scope.container_id},{'dockerfile': $scope.container.meta.Dockerfile}).$promise.then(function(data){
+            var req = {
+             method: 'POST',
+             url: '/container/dockerfile/'+$scope.container_id,
+             headers: {
+               'Content-Type': 'application/json'
+             },
+             data: {'dockerfile': $scope.container.meta.Dockerfile}
+            };
+            $http(req).success(function(data, status, headers, config) {
+            //Container.dockerFile({'id': $scope.container_id},{'dockerfile': $scope.container.meta.Dockerfile}).$promise.then(function(data){
                 $scope.msg = "New build requested after Dockerfile update";
             });
         }
@@ -325,7 +344,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         };
 })
 .controller('containersCtrl',
-    function ($scope, $route, Container) {
+    function ($scope, $route, $http, Container) {
         $scope.selected = undefined;
         $scope.get_containers = function(val) {
             return Container.search({},{'search': val}).$promise.then(function(data){
@@ -335,7 +354,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             });
         }
         $scope.select = function(item, model, label) {
-            Container.get({'id': item}).$promise.then(function(data){
+            //Container.get({'id': item}).$promise.then(function(data){
+            $http.get('/container/'+item).success(function(data){
                 $scope.containers = [data];
             });
         };
