@@ -8,6 +8,7 @@ from bson import json_util
 from bson.objectid import ObjectId
 
 import redis
+from elasticsearch import Elasticsearch
 
 
 
@@ -17,17 +18,20 @@ def main(global_config, **settings):
     config = Configurator(settings=settings)
     config.include('pyramid_chameleon')
 
-    mongo = MongoClient('mongodb://localhost:27017/')
+    mongo = MongoClient(config.registry.settings['mongo_url'])
     dbmongo = mongo['mydockerhub']
     config.registry.db_mongo = dbmongo
 
-    r = redis.StrictRedis(host='localhost', port=6379, db=0)
+    r = redis.StrictRedis(host=config.registry.settings['redis_host'], port=int(config.registry.settings['redis_port']), db=0)
     config.registry.db_redis = r
+
+    config.registry.es = Elasticsearch(config.registry.settings['elastic_host'].split(','))
 
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_static_view('app', 'shadock:webapp/app/')
     config.add_route('home', '/')
     config.add_route('config', '/config')
+    config.add_route('search', '/search')
     config.add_route('user_is_logged', '/user/logged')
     config.add_route('user_logout', '/user/logout')
     config.add_route('user_bind', '/user/bind')

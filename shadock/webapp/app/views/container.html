@@ -4,6 +4,9 @@
             <h2>{{container.id}}</h2>
             <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
         </div>
+        <div class="alert alert-info" role="alert">
+          <p>docker pull {{registry}}/{{container.id}}[:tag]</p>
+        </div>
         <div class="row">
             <div class="col-sm-6">
                 <div><h3>Description</h3></div>

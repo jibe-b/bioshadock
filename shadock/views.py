@@ -9,6 +9,7 @@ import base64
 import struct
 import re
 import urllib3
+import copy
 
 from bson import json_util
 from bson.json_util import dumps
@@ -93,6 +94,19 @@ def user_bind(request):
                         'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
                         'aud': 'urn:bioshadock/auth'}, secret)
     return { 'user': user, 'token': token }
+
+
+@view_config(route_name='search', renderer='json', request_method='GET')
+def search_es(request):
+    q = request.params['q']
+    user = is_logged(request)
+    if user is None:
+        q = q + 'AND visible:true'
+    else:
+        q = q + 'AND (visible:true OR user:"'+user['id']+'" OR acl_push.members:"'+user['id']+'" OR acl_pull.members:"'+user['id']+'")'
+
+    res = request.registry.es.search(index="bioshadock", doc_type='container', q=q, size=1000)
+    return res
 
 @view_config(route_name='containers', renderer='json', request_method='GET')
 def containers(request):
@@ -193,17 +207,23 @@ def container_update(request):
         'meta.description': form['meta']['description'],
         'meta.tags': form['meta']['tags'],
         'meta.terms': form['meta']['terms'],
+        'visible': form['visible']
     }
     repo['acl_push']['members'] = form['acl_push']['members']
     repo['acl_pull']['members'] = form['acl_pull']['members']
     repo['meta']['description'] = form['meta']['description']
     repo['meta']['tags'] = form['meta']['tags']
     repo['meta']['terms'] = form['meta']['terms']
+    repo['visible'] = form['visible']
     if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
         repo['user_can_push'] = True
     else:
         repo['user_can_push'] = False
     request.registry.db_mongo['repository'].update({'id': repo_id}, {'$set': updates})
+    es_repo = copy.deepcopy(repo)
+    del es_repo['_id']
+    del es_repo['builds']
+    request.registry.es.index(index="bioshadock", doc_type='container', id=repo_id, body=es_repo)
     return repo
 
 @view_config(route_name='container', renderer='json', request_method='GET')
@@ -234,7 +254,8 @@ def containers_new(request):
     if user_can_push(user['id'], repo_id, request):
         request.registry.db_mongo['repository'].update({'id': repo_id},
                         {'$set': {'meta.description': form['description'],
-                                  'meta.Dockerfile': form['dockerfile']}
+                                  'meta.Dockerfile': form['dockerfile']},
+                                  'visible': form['visible']
                         })
         newbuild = {
             'id': repo_id,
@@ -244,6 +265,7 @@ def containers_new(request):
         }
         request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
         repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+        res = request.registry.es.index(index="bioshadock", doc_type='container', id=repo_id, body=repo)
         return repo
     else:
         return HTTPForbidden()
@@ -645,7 +667,7 @@ def user_can_push(username, repository, request):
             return False
     else:
         if len(repos) > 1 or (len(repos) == 1 and can_push_to_library(username)):
-            repo = { 'id' : user_repo, 'user': username, 'pulls': 0, 'visible': False,
+            repo = { 'id' : user_repo, 'user': username, 'pulls': 0, 'visible': True,
                      'meta': {
                                'tags': [],
                                'terms': [],
@@ -657,6 +679,7 @@ def user_can_push(username, repository, request):
                      'builds': []
                    }
             request.registry.db_mongo['repository'].insert(repo)
+            res = request.registry.es.index(index="bioshadock", doc_type='container', id=user_repo, body=repo)
             return True
         else:
             return False
@@ -762,7 +785,7 @@ def api2_token(request):
                         'sub': username,
                         'aud': service,
                         'access': access,
-                        'nbf': datetime.datetime.utcnow(),
+                        #'nbf': datetime.datetime.utcnow(),
                         'iat': datetime.datetime.utcnow(),
                         'exp': datetime.datetime.utcnow()+datetime.timedelta(seconds=3600*24),
                         }

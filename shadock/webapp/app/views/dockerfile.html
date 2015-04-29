@@ -3,13 +3,7 @@
   <tab heading="Info" select="go_to_info()">
   </tab>
   <tab heading="Dockerfile" active="true">
-      <textarea id="dockerfile" class="dockerfile" ui-codemirror="{
-                         lineNumbers: true,
-                         theme:'twilight',
-                         readOnly: ! container.user_can_push,
-                         lineWrapping : true,
-                         mode: 'text/plain'
-                     }" ng-model="container.meta.Dockerfile" >
+      <textarea id="dockerfile" class="dockerfile" ui-codemirror="cmOption" ng-model="container.meta.Dockerfile" >
       </textarea>
       <button class="btn btn-primary" ng-if="container.user_can_push" ng-click="update_dockerfile()">Update</button>
   </tab>

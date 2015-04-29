@@ -85,6 +85,7 @@
                             Logout
                         </a>
                     </li>
+                    <li><form class="form-inline"><input type="search" class="form-control" ng-model="searchquery" placeholder="Search"><button class="btn btn-default" type="button" ng-click="search(searchquery)">OK</button></form></li>
                 </ul>
             </div>
         </div>
@@ -122,6 +123,7 @@
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
     <script src="scripts/resources.js"></script>
     <script src="scripts/bioshadock.js"></script>
+    <script src="scripts/codemirror-docker.js"></script>
     <!-- endbuild -->
 </body>
 

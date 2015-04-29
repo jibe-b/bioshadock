@@ -28,6 +28,17 @@
 
     }
 
+    function Search($resource) {
+        return $resource('/search', {}, {
+            search: {
+                url: '/search',
+                method: 'GET',
+                isArray: false,
+                cache: false
+            }
+        });
+    }
+
     function Container($resource) {
         return $resource('/container/:id', {}, {
             create_new: {
@@ -74,5 +85,6 @@
       .factory('User', User)
       .factory('Container', Container)
       .factory('Config', Config)
+      .factory('Search', Search)
 
 }());

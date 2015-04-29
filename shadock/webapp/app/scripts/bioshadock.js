@@ -10,6 +10,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/welcome.html',
     controller: 'welcomeCtrl'
   })
+  .when('/search', {
+    templateUrl: 'views/search.html',
+    controller: 'searchCtrl'
+  })
   .when('/containers', {
     templateUrl: 'views/containers.html',
     controller: 'containersCtrl'
@@ -69,12 +73,25 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     function ($scope, $route) {
 
 })
+.controller('searchCtrl',
+    function ($scope, $route, $routeParams, Search) {
+        Search.search({'q': decodeURIComponent($routeParams.q)}, function(data){
+            $scope.hits = data.hits;
+        });
+})
 .controller('newcontainerCtrl',
     function ($scope, $route, $routeParams, Container, Auth) {
     var user = Auth.getUser();
     $scope.containerName = '';
     $scope.containerDescription = '';
     $scope.containerDockerfile = '';
+    $scope.containerVisible = true;
+
+    $scope.cmOption = {
+        lineNumbers: true,
+        indentWithTabs: true,
+        mode: 'docker'
+      };
 
     $scope.create_container = function() {
         if($scope.containerName == '') {
@@ -103,7 +120,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 Container.create_new({},
                     {'name':  $scope.containerName,
                     'description': $scope.containerDescription,
-                    'dockerfile': $scope.containerDockerfile
+                    'dockerfile': $scope.containerDockerfile,
+                    'visible': $scope.containerVisible
                     }).$promise.then(function(data){
                     location.replace('#/container/'+$scope.containerName);
                 }, function(error) {
@@ -250,6 +268,13 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('containerDockerFileCtrl',
     function ($scope, $route, $routeParams, $document, Container, Config) {
         $scope.container_id = $routeParams.path;
+
+        $scope.cmOption = {
+            lineNumbers: true,
+            indentWithTabs: true,
+            mode: 'docker'
+          };
+
         Config.get().$promise.then(function(config) {
             $scope.registry = config['registry'];
 
@@ -335,6 +360,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
            $scope.user = user;
            $scope.is_logged = true;
         });
+
+        $scope.search = function(query) {
+            $location.url('/search?q='+encodeURIComponent(query));
+        };
 
         $scope.logout = function() {
             if($window.sessionStorage != null) {
