@@ -721,7 +721,7 @@ def api2_token(request):
         # Login request
         if request.authorization is None:
             account = 'anonymous'
-        if account != 'anonymous' not is_logged(request):
+        if account != 'anonymous' and not is_logged(request):
             (type, bearer) = request.authorization
             username, password = decode(bearer)
             if username == 'anonymous':
