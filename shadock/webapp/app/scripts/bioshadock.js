@@ -220,7 +220,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
              });
         }
         $scope.get_container = function(){
-            Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            //Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $http.get('/container/'+$scope.container_id).success(function(data){
                 $scope.container = data;
                 if(user == null) { user = {'id': 'anonymous'}}
                 var req = {
@@ -237,10 +238,33 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 };
 
                 $http(req).success(function(data, status, headers, config) {
-                    Container.manifest({'id': $scope.container_id},{'token': data.token, 'tag': $scope.tag}).$promise.then(function(data){
+                    var manifestreq = {
+                     method: 'POST',
+                     url: '/container/manifest/'+$scope.container_id,
+                     headers: {
+                       'Content-Type': 'application/json'
+                     },
+                     data: {
+                         'token': data.token,
+                         'tag': $scope.tag
+                     }
+                    };
+                    //Container.manifest({'id': $scope.container_id},{'token': data.token, 'tag': $scope.tag}).$promise.then(function(data){
+                    $http(manifestreq).success(function(data, status, headers, config) {
                         $scope.manifest = data;
                     });
-                    Container.tags({'id': $scope.container_id},{'token': data.token}).$promise.then(function(data){
+                    var tagsreq = {
+                     method: 'POST',
+                     url: '/container/tags/'+$scope.container_id,
+                     headers: {
+                       'Content-Type': 'application/json'
+                     },
+                     data: {
+                         'token': data.token
+                     }
+                    };
+                    //Container.tags({'id': $scope.container_id},{'token': data.token}).$promise.then(function(data){
+                    $http(tagsreq).success(function(data, status, headers, config) {
                         $scope.tags = data.tags;
                     });
                 });
