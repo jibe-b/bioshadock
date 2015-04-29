@@ -49,7 +49,6 @@ mongodb, redis, elasticsearch
 
 * user registration (and password recovery)
 * user credentials check
-* index and search in index
 * checks ACLs when pushing to library
 * add admin setup
 
