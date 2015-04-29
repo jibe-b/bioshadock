@@ -717,9 +717,11 @@ def api2_token(request):
         scope = request.params['scope']
     except Exception:
         pass
-    if request.authorization:
+    if request.authorization or request.authorization is None:
         # Login request
-        if not is_logged(request):
+        if request.authorization is None:
+            account = 'anonymous'
+        if account != 'anonymous' not is_logged(request):
             (type, bearer) = request.authorization
             username, password = decode(bearer)
             if username == 'anonymous':
