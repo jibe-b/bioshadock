@@ -222,7 +222,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.get_container = function(){
             Container.get({'id': $scope.container_id}).$promise.then(function(data){
                 $scope.container = data;
-
+                if(user == null) { user = {'id': 'anonymous'}}
                 var req = {
                  method: 'POST',
                  url: '/v2/token/',
