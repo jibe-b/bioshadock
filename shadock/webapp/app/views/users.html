@@ -1,0 +1,22 @@
+<div class="row">
+    <table id="users" datatable="ng"  class="table table-bordered table-striped row-border hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Role</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="user in users track by user.id">
+                <td>{{::user.id}}</td>
+                <td>
+                    <select ng-model="user.role" ng-change="change_role(user)">
+                        <option value="admin">Admin</option>
+                        <option value="editor">Editor</option>
+                        <option value="contributor">Contributor</option>
+                    </select>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

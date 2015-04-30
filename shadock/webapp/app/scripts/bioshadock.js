@@ -14,6 +14,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/search.html',
     controller: 'searchCtrl'
   })
+  .when('/users', {
+    templateUrl: 'views/users.html',
+    controller: 'usersCtrl'
+  })
   .when('/containers', {
     templateUrl: 'views/containers.html',
     controller: 'containersCtrl'
@@ -71,6 +75,16 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 }])
 .controller('welcomeCtrl',
     function ($scope, $route) {
+
+})
+.controller('usersCtrl',
+    function ($scope, $route, User) {
+        User.query({}, function(data){
+            $scope.users = data;
+        });
+        $scope.change_role = function(user){
+                user.$save({'uid': user.id});
+        };
 
 })
 .controller('searchCtrl',
@@ -406,6 +420,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $rootScope.$on('loginCtrl.login', function (event, user) {
            $scope.user = user;
            $scope.is_logged = true;
+           if($scope.user.role && $scope.user.role == 'admin') {
+               $scope.is_admin = true;
+           }
         });
 
         $scope.search = function(query) {
@@ -426,6 +443,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             if(user !== null && user['id'] !== undefined) {
                 $scope.user = user;
                 $scope.is_logged = true;
+                if($scope.user.role && $scope.user.role == 'admin') {
+                    $scope.is_admin = true;
+                }
+                console.log($scope.user);
                 Auth.setUser($scope.user);
             }
         });

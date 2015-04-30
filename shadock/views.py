@@ -32,12 +32,20 @@ import pymongo
 
 
 def is_admin(username, request):
-    #TODO
+    user = request.registry.db_mongo['users'].find_one({'id': username})
+    if user is None:
+        return False
+    if user['role'] == 'admin':
+        return True
     return False
 
 def can_push_to_library(username, request):
-    #TODO
-    return True
+    user = request.registry.db_mongo['users'].find_one({'id': username})
+    if user is None:
+        return False
+    if user['role'] == 'admin' or user['role'] == 'editor':
+        return True
+    return False
 
 def valid_user(username, password, request):
     #TODO manage auth
@@ -63,6 +71,30 @@ def is_logged(request):
             return None
     return None
 
+@view_config(route_name='users', renderer='json', request_method='GET')
+def users(request):
+    users = request.registry.db_mongo['users'].find({})
+    res = []
+    for user in users:
+        res.append(user)
+    return res
+
+@view_config(route_name='user', renderer='json', request_method='POST')
+def user(request):
+    session_user = is_logged(request)
+    if session_user is None:
+        return HTTPForbidden('User not logged')
+    user = request.registry.db_mongo['users'].find_one({'id': request.matchdict['id']})
+    if user is None:
+        return HTTPNotFound()
+    if not is_admin(session_user['id'], request):
+        return HTTPForbidden()
+    if session_user['id'] == user['id']:
+        return HTTPForbidden()
+    form = json.loads(request.body, encoding=request.charset)
+    user['role'] = form['role']
+    request.registry.db_mongo['users'].update({'id': user['id']},{'$set': {'role': user['role']}})
+    return user
 
 @view_config(route_name='config', renderer='json', request_method='GET')
 def config(request):
@@ -275,7 +307,10 @@ def containers_new(request):
         }
         request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
         repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
-        res = request.registry.es.index(index="bioshadock", doc_type='container', id=repo_id, body=repo)
+        es_repo = copy.deepcopy(repo)
+        del es_repo['_id']
+        del es_repo['builds']
+        res = request.registry.es.index(index="bioshadock", doc_type='container', id=repo_id, body=es_repo)
         return repo
     else:
         return HTTPForbidden()
@@ -645,17 +680,15 @@ def api2_ping(request):
 def to_bytes(n, length):
     return bytes( (n >> i*8) & 0xff for i in reversed(range(length)))
 
-def can_push_to_library(username):
-    return True
 
 def user_can_delete(username, repository, request):
     user_repo = repository
     repos = repository.split('/')
-    if len(repos) == 1:
-        user_repo = 'library/'+repository
+    #if len(repos) == 1:
+    #    user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
-        if existing_repo['user'] == username:
+        if existing_repo['user'] == username or is_admin(username, request):
             return True
         else:
             return False
@@ -668,10 +701,10 @@ def user_can_push(username, repository, request):
     user_repo = repository
     is_library = False
     repos = repository.split('/')
-    if len(repos) == 1 or repos[0] == 'library':
+    if repos[0] == 'library':
         if not can_push_to_library(username, request):
             return False
-        user_repo = 'library/'+repository
+        #user_repo = 'library/'+repository
         is_library = True
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
@@ -680,7 +713,7 @@ def user_can_push(username, repository, request):
         else:
             return False
     else:
-        if len(repos) > 1 or (len(repos) == 1 and can_push_to_library(username)):
+        if not is_library or (is_library and can_push_to_library(username, request)):
             repo = { 'id' : user_repo,
                      'user': username,
                      'pulls': 0,
@@ -697,7 +730,10 @@ def user_can_push(username, repository, request):
                      'builds': []
                    }
             request.registry.db_mongo['repository'].insert(repo)
-            res = request.registry.es.index(index="bioshadock", doc_type='container', id=user_repo, body=repo)
+            es_repo = copy.deepcopy(repo)
+            del es_repo['_id']
+            del es_repo['builds']
+            res = request.registry.es.index(index="bioshadock", doc_type='container', id=user_repo, body=es_repo)
             return True
         else:
             return False
@@ -705,8 +741,8 @@ def user_can_push(username, repository, request):
 def user_can_pull(username, repository, request):
     user_repo = repository
     repos = repository.split('/')
-    if len(repos) == 1:
-        user_repo = 'library/'+repository
+    #if len(repos) == 1:
+    #    user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
         if existing_repo['user'] == username or username in existing_repo['acl_pull']['members']:
