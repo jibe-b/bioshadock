@@ -15,7 +15,7 @@
     <div class="col-sm-4" ng-repeat="last in ::latest">
         <div class="panel panel-info">
             <div class="panel-heading">
-                <h3 class="panel-title" id="panel-title">{{last.id}}</h3>
+                <h3 class="panel-title" id="panel-title"><a ng-href="#/container/{{last.id}}">{{last.id}}</a></h3>
             </div>
             <div class="panel-body">{{last.description}}</div>
         </div>

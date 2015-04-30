@@ -446,7 +446,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 if($scope.user.role && $scope.user.role == 'admin') {
                     $scope.is_admin = true;
                 }
-                console.log($scope.user);
                 Auth.setUser($scope.user);
             }
         });

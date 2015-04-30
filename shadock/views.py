@@ -280,10 +280,10 @@ def container(request):
             return HTTPForbidden()
         if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
-        if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
-            repo['user_can_push'] = True
-        else:
-            repo['user_can_push'] = False
+    if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
+        repo['user_can_push'] = True
+    else:
+        repo['user_can_push'] = False
     return repo
 
 @view_config(route_name='containers_new', renderer='json', request_method='POST')
