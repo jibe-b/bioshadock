@@ -47,6 +47,12 @@
                 isArray: false,
                 cache: false
             },
+            latest: {
+                url: '/container/latest',
+                method: 'GET',
+                isArray: true,
+                cache: false
+            },
             search: {
                 url: '/container/search',
                 method: 'POST',

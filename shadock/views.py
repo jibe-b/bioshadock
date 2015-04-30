@@ -25,6 +25,7 @@ from cryptography.hazmat.primitives.serialization import (
 from cryptography.hazmat.primitives import serialization
 
 from basicauth import decode
+import pymongo
 
 #request.registry.settings['admin']
 #user = request.registry.db_mongo['users'].find_one({'id': user_id})
@@ -107,6 +108,15 @@ def search_es(request):
 
     res = request.registry.es.search(index="bioshadock", doc_type='container', q=q, size=1000)
     return res
+
+
+@view_config(route_name='containers_latest', renderer='json', request_method='GET')
+def containers_latest(request):
+    repos = request.registry.db_mongo['repository'].find({'library': True},{'id': 1, 'description': 1}, sort=[('_id', pymongo.DESCENDING)], limit=20)
+    library_containers = []
+    for container in repos:
+        library_containers.append(container)
+    return library_containers
 
 @view_config(route_name='containers', renderer='json', request_method='GET')
 def containers(request):
@@ -656,11 +666,13 @@ def user_can_push(username, repository, request):
     if username == 'anonymous':
         return False
     user_repo = repository
+    is_library = False
     repos = repository.split('/')
     if len(repos) == 1 or repos[0] == 'library':
         if not can_push_to_library(username, request):
             return False
         user_repo = 'library/'+repository
+        is_library = True
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
         if existing_repo['user'] == username or username in existing_repo['acl_push']['members']:
@@ -669,7 +681,11 @@ def user_can_push(username, repository, request):
             return False
     else:
         if len(repos) > 1 or (len(repos) == 1 and can_push_to_library(username)):
-            repo = { 'id' : user_repo, 'user': username, 'pulls': 0, 'visible': True,
+            repo = { 'id' : user_repo,
+                     'user': username,
+                     'pulls': 0,
+                     'visible': True,
+                     'library': is_library,
                      'meta': {
                                'tags': [],
                                'terms': [],

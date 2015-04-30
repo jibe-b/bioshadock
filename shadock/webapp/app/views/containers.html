@@ -1,5 +1,6 @@
 <div class="row">
-  <div class="col-lg-6 pull-right">
+  <div class="basic_search">
+    <h3>Search containers in registry</h3>
     <div class="input-group">
         <input type="text" ng-model="selected" placeholder="Containers" typeahead-min-length="3" typeahead-on-select="select($item, $model, $label)" typeahead="id for id in get_containers($viewValue) | filter:$viewValue | limitTo:10" typeahead-loading="loadingContainers" class="form-control">
         <i ng-show="loadingContainers" class="glyphicon glyphicon-refresh"></i>
@@ -10,8 +11,18 @@
   </div><!-- /.col-lg-6 -->
 </div><!-- /.row -->
 
+<div class="row" ng-if="! containers">
+    <div class="col-sm-4" ng-repeat="last in latest">
+        <div class="panel panel-info">
+            <div class="panel-heading">
+                <h3 class="panel-title" id="panel-title">{{last.id}}</h3>
+            </div>
+            <div class="panel-body">{{last.description}}</div>
+        </div>
+    </div>
+</div>
 
-<div class="row">
+<div class="row" ng-if="containers">
     <table id="containers" datatable="ng"  class="table table-bordered table-striped row-border hover">
         <thead>
             <tr>

@@ -2,6 +2,12 @@ body { padding-top: 70px; }
 
 td span { margin-left: 5px;}
 
+.basic_search {
+    padding: 50px;
+    border-style: solid;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
 
 .tags { margin-top: 15px;
         margin-bottom: 15px;

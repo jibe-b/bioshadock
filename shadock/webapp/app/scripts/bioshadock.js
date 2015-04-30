@@ -346,6 +346,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('containersCtrl',
     function ($scope, $route, $http, Container) {
         $scope.selected = undefined;
+        Container.latest({}, function(data){
+            $scope.latest = data;
+        });
         $scope.get_containers = function(val) {
             return Container.search({},{'search': val}).$promise.then(function(data){
                 return data.map(function(item){
