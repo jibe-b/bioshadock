@@ -8,6 +8,7 @@ import json
 import datetime
 from pymongo import MongoClient
 from bson import json_util
+from bson.json_util import loads
 from bson.objectid import ObjectId
 import redis
 import re
@@ -34,7 +35,7 @@ class BioshadockDaemon(Daemon):
               BioshadockDaemon.cli = Client(base_url='tcp://127.0.0.1:2375')
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           if build is not None:
-              build = json.loads(build)
+              build = loads(build)
               print str(build)
               dockerfile = build['dockerfile']
               f = BytesIO(dockerfile.encode('utf-8'))

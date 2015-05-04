@@ -182,7 +182,9 @@ def container_manifest(request):
     r = http.request('GET', request.registry.settings['dockerregistry']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
-    return json.loads(r.data)
+    res = json.loads(r.data)
+    res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
+    return res
 
 @view_config(route_name='container_dockerfile', renderer='json', request_method='POST')
 def container_dockerfile(request):
@@ -280,7 +282,7 @@ def container(request):
             return HTTPForbidden()
         if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
-    if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
+    if user and (is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']):
         repo['user_can_push'] = True
     else:
         repo['user_can_push'] = False
@@ -296,8 +298,8 @@ def containers_new(request):
     if user_can_push(user['id'], repo_id, request):
         request.registry.db_mongo['repository'].update({'id': repo_id},
                         {'$set': {'meta.description': form['description'],
-                                  'meta.Dockerfile': form['dockerfile']},
-                                  'visible': form['visible']
+                                  'meta.Dockerfile': form['dockerfile'],
+                                  'visible': form['visible'] in ['true', 1]}
                         })
         newbuild = {
             'id': repo_id,

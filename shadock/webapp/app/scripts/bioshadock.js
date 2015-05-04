@@ -74,8 +74,11 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     $httpProvider.interceptors.push('authInterceptor');
 }])
 .controller('welcomeCtrl',
-    function ($scope, $route) {
-
+    function ($scope, $route, Config) {
+    Config.get().$promise.then(function(config) {
+        $scope.registry = config['registry'];
+        $scope.service = config['service'];
+    });
 })
 .controller('usersCtrl',
     function ($scope, $route, User) {
@@ -127,8 +130,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         //Container.get({'id': $scope.containerName}).$promise.then(function(data){
         $http.get('/container/'+$scope.containerName).success(function(data){
             $scope.msg = "Name already exists";
-        }, function(error){
-            if(error.status != 404) {
+        }).error(function(data, status, headers, config){
+            if(status != 404) {
                 $scope.msg = "Name already exists or cannot be used";
             }
             else {
