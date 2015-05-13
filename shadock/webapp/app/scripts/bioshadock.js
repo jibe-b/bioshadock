@@ -78,6 +78,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     Config.get().$promise.then(function(config) {
         $scope.registry = config['registry'];
         $scope.service = config['service'];
+        $scope.issuer = config['issuer'];
     });
 })
 .controller('usersCtrl',

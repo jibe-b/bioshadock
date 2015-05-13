@@ -9,8 +9,7 @@ Copy files in /etc/ssl/certificates
 update-ca-certificates
 restart docker daemon
 
-Or copy file in /etc/docker/certs.d/{{service}} with name ca.crt and restart doc
-ker
+Or copy file in /etc/docker/certs.d/{{service}} and /etc/docker/certs.d/{{issuer}} with name ca.crt and restart docker
 
 Or append the content of the file in /etc/ssl/certs/ca-certificates.crt
        </pre>

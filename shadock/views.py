@@ -52,7 +52,7 @@ def valid_user(username, password, request):
     print "Add fake user for test"
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None:
-        request.registry.db_mongo['users'].insert({'id': username})
+        request.registry.db_mongo['users'].insert({'id': username, 'role': 'contributor'})
     return True
 
 
@@ -100,7 +100,8 @@ def user(request):
 def config(request):
     config = {
         'registry': request.registry.settings['dockerregistry'],
-        'service': request.registry.settings['service']
+        'service': request.registry.settings['service'],
+        'issuer': request.registry.settings['issuer']
     }
     return config
 
