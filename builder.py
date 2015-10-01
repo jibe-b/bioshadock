@@ -13,9 +13,13 @@ from bson.objectid import ObjectId
 import redis
 import re
 import subprocess
+import tempfile
+import shutil
 from daemon import Daemon
 
 from docker import Client
+
+from git.repo.base import Repo
 
 class BioshadockDaemon(Daemon):
 
@@ -38,6 +42,21 @@ class BioshadockDaemon(Daemon):
               build = loads(build)
               print str(build)
               dockerfile = build['dockerfile']
+              gitrepo = build['git']
+              do_git = False
+              git_repo_dir = None
+              if gitrepo is not None and gitrepo:
+                  # TODO clone repo in a dir, chdir to repo and optionally write
+                  # dockerfile
+                  git_repo_dir = tempfile.mkdtemp(suffix='.git')
+                  os.chdir(git_repo_dir)
+                  if dockerfile:
+                      print "Overwrite Dockerfile"
+                      f = open('Dockerfile', 'w')
+                      f.write(dockerfile.encode('utf-8'))
+                      f.close()
+                  Repo.clone_from(gitrepo, git_repo_dir)
+
               f = BytesIO(dockerfile.encode('utf-8'))
               BioshadockDaemon.cli = Client(base_url='tcp://127.0.0.1:2375')
               response = [line for line in BioshadockDaemon.cli.build(
@@ -58,6 +77,10 @@ class BioshadockDaemon(Daemon):
               else:
                   build['status'] = False
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},{'$push': {'builds': build}})
+              if do_git:
+                  cur_dir = os.path.dirname(os.path.realpath(__file__))
+                  os.chdir(cur_dir)
+                  shutil.rmtree(git_repo_dir)
           time.sleep(2)
 
 

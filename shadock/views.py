@@ -187,6 +187,35 @@ def container_manifest(request):
     res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
     return res
 
+@view_config(route_name='container_git', renderer='json')
+def container_git(request):
+    '''
+    trigger for a git rebuild, must container a Dockerfile in git repo or in container def
+    '''
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    container = request.registry.db_mongo['repository'].find_one({'id': repo_id}
+    if 'git' not in container['meta']:
+        return HTTPForbidden()
+    newbuild = {
+        'id': repo_id,
+        'date': datetime.datetime.now(),
+        'dockerfile': container['meta']['Dockerfile'],
+        'git': container['meta']['git'],
+        'user': user['id']
+    }
+    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+    return {}
+
+
 @view_config(route_name='container_dockerfile', renderer='json', request_method='POST')
 def container_dockerfile(request):
     user = is_logged(request)
@@ -201,11 +230,14 @@ def container_dockerfile(request):
             return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
     dockerfile = form['dockerfile']
+    if 'git' not in form:
+        form['git'] = None
     request.registry.db_mongo['repository'].update({'id': repo_id},{'$set': {'meta.Dockerfile': dockerfile}})
     newbuild = {
         'id': repo_id,
         'date': datetime.datetime.now(),
         'dockerfile': dockerfile,
+        'git': form['git'],
         'user': user['id']
     }
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
@@ -233,6 +265,21 @@ def container_tags(request):
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
     return json.loads(r.data)
+
+
+@view_config(route_name='container', renderer='json', request_method='DELETE')
+def container_delete(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if user is None:
+        return HTTPForbidden()
+    if repo is None:
+        return HTTPNotFound()
+    if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
+        return HTTPForbidden()
+    request.registry.db_mongo['repository'].remove({'id': repo_id})
+    return repo
 
 @view_config(route_name='container', renderer='json', request_method='POST')
 def container_update(request):
@@ -295,17 +342,21 @@ def containers_new(request):
     if user is None:
         return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
+    if 'git' not in form or not form['git']:
+        form['git'] = None
     repo_id = form['name']
     if user_can_push(user['id'], repo_id, request):
         request.registry.db_mongo['repository'].update({'id': repo_id},
                         {'$set': {'meta.description': form['description'],
                                   'meta.Dockerfile': form['dockerfile'],
+                                  'meta.git': form['git'],
                                   'visible': form['visible'] in ['true', 1]}
                         })
         newbuild = {
             'id': repo_id,
             'date': datetime.datetime.now(),
             'dockerfile': form['dockerfile'],
+            'git': form['git'],
             'user': user['id']
         }
         request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))

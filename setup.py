@@ -20,7 +20,8 @@ requires = [
     'urllib3',
     'redis',
     'docker-py',
-    'elasticsearch'
+    'elasticsearch',
+    'GitPython'
     ]
 
 setup(name='shadock',

@@ -104,6 +104,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     $scope.containerDescription = '';
     $scope.containerDockerfile = '';
     $scope.containerVisible = true;
+    $scope.containerGit = '';
 
     $scope.cmOption = {
         lineNumbers: true,
@@ -140,7 +141,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                     {'name':  $scope.containerName,
                     'description': $scope.containerDescription,
                     'dockerfile': $scope.containerDockerfile,
-                    'visible': $scope.containerVisible
+                    'visible': $scope.containerVisible,
+                    'git': $scope.containerGit
                     }).$promise.then(function(data){
                     location.replace('#/container/'+$scope.containerName);
                 }, function(error) {
@@ -163,7 +165,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
 })
 .controller('containerCtrl',
-    function ($scope, $route, $routeParams, $document, $http, Container, Config, Auth) {
+    function ($scope, $route, $routeParams, $document, $http, $location, Container, Config, Auth) {
         $scope.container_id = $routeParams.path;
         $scope.tag = 'latest'
         var user = Auth.getUser();
@@ -228,6 +230,20 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                  $scope.show_save = true;
             }
         };
+
+        $scope.delete_container = function(){
+                var req = {
+                 method: 'DELETE',
+                 url: '/container/'+$scope.container_id,
+                 headers: {
+                   'Content-Type': 'application/json'
+                 }
+                };
+                $http(req).success(function(data, status, headers, config) {
+                    $location.path('/');
+                });
+
+        }
 
         $scope.proposesave = function(){
             $scope.show_save = true;
@@ -344,7 +360,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
              headers: {
                'Content-Type': 'application/json'
              },
-             data: {'dockerfile': $scope.container.meta.Dockerfile}
+             data: {'dockerfile': $scope.container.meta.Dockerfile, 'git': $scope.container.meta.git}
             };
             $http(req).success(function(data, status, headers, config) {
             //Container.dockerFile({'id': $scope.container_id},{'dockerfile': $scope.container.meta.Dockerfile}).$promise.then(function(data){
