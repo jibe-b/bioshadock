@@ -1,6 +1,7 @@
 from pyramid.config import Configurator
 from pyramid.renderers import JSON
 
+import sys
 import json
 import datetime
 from pymongo import MongoClient
@@ -9,6 +10,7 @@ from bson.objectid import ObjectId
 
 import redis
 from elasticsearch import Elasticsearch
+import logging
 
 
 
@@ -26,6 +28,22 @@ def main(global_config, **settings):
     config.registry.db_redis = r
 
     config.registry.es = Elasticsearch(config.registry.settings['elastic_host'].split(','))
+
+    config.registry.ldap_server = None
+    config.registry.con = None
+    if config.registry.settings['use_ldap'] == '1':
+        # Check if in ldap
+        #import ldap
+        from ldap3 import Server, Connection, AUTH_SIMPLE, STRATEGY_SYNC, STRATEGY_ASYNC_THREADED, SEARCH_SCOPE_WHOLE_SUBTREE, GET_ALL_INFO
+        try:
+            ldap_host = config.registry.settings['ldap.host']
+            ldap_port = config.registry.settings['ldap.port']
+            config.registry.ldap_server = Server(ldap_host, port=int(ldap_port), get_info=GET_ALL_INFO)
+            config.registry.con = Connection(ldap_server, auto_bind=True, client_strategy=STRATEGY_SYNC, check_names=True)
+        except Exception as err:
+            logging.error(str(err))
+            sys.exit(1)
+
 
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_static_view('app', 'shadock:webapp/app/')
