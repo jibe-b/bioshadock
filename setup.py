@@ -21,7 +21,9 @@ requires = [
     'redis',
     'docker-py',
     'elasticsearch',
-    'GitPython'
+    'GitPython',
+    'bcrypt',
+    'ldap3'
     ]
 
 setup(name='shadock',

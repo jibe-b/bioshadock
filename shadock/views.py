@@ -52,7 +52,18 @@ def valid_user(username, password, request):
     print "Add fake user for test"
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None:
+        # TODO check in ldap
         request.registry.db_mongo['users'].insert({'id': username, 'role': 'contributor'})
+    else:
+        if 'password' in user:
+            print "local user"
+            if bcrypt.hashpw(password.encode('utf-8'), user['password'].encode('utf-8')) == user['password']:
+                return True
+            else:
+                return False
+        else:
+            # TODO check auth with ldap
+            print 'ldap user'
     return True
 
 
