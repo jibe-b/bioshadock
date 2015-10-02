@@ -76,6 +76,8 @@ Docker client: docker -D -H 127.0.0.1:2375 push cloud-30.genouest.org/testosallo
 
   docker run -p 443:443 -v path_to_certs:/etc/ssl/certs -v development.ini:/opt/bioshadock/development.ini osallou/bioshadock
 
+  Certs should contain bioshadock.crt, bioshadock.key , ...
+
 
 
 # Credits
