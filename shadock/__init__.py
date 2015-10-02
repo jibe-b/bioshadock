@@ -39,7 +39,6 @@ def main(global_config, **settings):
             ldap_host = config.registry.settings['ldap.host']
             ldap_port = config.registry.settings['ldap.port']
             config.registry.ldap_server = Server(ldap_host, port=int(ldap_port), get_info=GET_ALL_INFO)
-            config.registry.con = Connection(ldap_server, auto_bind=True, client_strategy=STRATEGY_SYNC, check_names=True)
         except Exception as err:
             logging.error(str(err))
             sys.exit(1)

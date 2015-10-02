@@ -51,19 +51,45 @@ def valid_user(username, password, request):
     #TODO manage auth
     print "Add fake user for test"
     user = request.registry.db_mongo['users'].find_one({'id': username})
-    if user is None:
+    if user is None or 'password' not in user:
         # TODO check in ldap
-        request.registry.db_mongo['users'].insert({'id': username, 'role': 'contributor'})
-    else:
-        if 'password' in user:
-            print "local user"
-            if bcrypt.hashpw(password.encode('utf-8'), user['password'].encode('utf-8')) == user['password']:
-                return True
+
+        # TODO check auth with ldap
+        print 'ldap user'
+        ldap_dn = request.registry.settings['ldap.dn']
+        base_dn = 'ou=People,' + ldap_dn
+        ldapfilter = "(&(|(uid=" + username + ")(mail=" + username + ")))"
+        try:
+            attrs = ['uid, mail']
+            con = Connection(request.registry.ldap_server, auto_bind=True, client_strategy=STRATEGY_SYNC, check_names=True)
+            con.search(base_dn, ldapfilter, SEARCH_SCOPE_WHOLE_SUBTREE, attributes=attrs)
+            if con.response:
+                user_dn= None
+                user_id = None
+                for r in con.response:
+                    user_dn = str(r['dn'])
+                    user_id = r['attributes']['uid']
+                con.unbind()
+                ## TODO CHECK PASSWORD
+                con = Connection(ldap_server, auto_bind=True, read_only=True, client_strategy=STRATEGY_SYNC, user=user_dn, password=password, authentication=AUTH_SIMPLE, check_names=True)
+                con.unbind()
+
             else:
+                con.unbind()
                 return False
+
+            if user_dn is not None and user is None:
+                request.registry.db_mongo['users'].insert({'id': username, 'role': 'contributor'})
+
+        except Exception as e:
+            logging.error(str(e))
+            return False
+    else:
+        print "local user"
+        if bcrypt.hashpw(password.encode('utf-8'), user['password'].encode('utf-8')) == user['password']:
+            return True
         else:
-            # TODO check auth with ldap
-            print 'ldap user'
+            return False
     return True
 
 
