@@ -213,7 +213,7 @@ def container_git(request):
             return HTTPForbidden()
         if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
-    container = request.registry.db_mongo['repository'].find_one({'id': repo_id}
+    container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if 'git' not in container['meta']:
         return HTTPForbidden()
     newbuild = {
