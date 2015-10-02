@@ -4,7 +4,7 @@ EXPOSE 6543
 RUN a2enmod proxy
 RUN a2enmod proxy_http
 RUN a2enmod ssl
-ADD apache2/default-ssl /etc/apache2/sites-enabled/
+ADD apache2/default-ssl.conf /etc/apache2/sites-enabled/
 ADD apache2/bioshadock.key /etc/ssl/certs/
 ADD apache2/bioshadock.crt /etc/ssl/certs/
 ADD shadock /opt/bioshadock/shadock
