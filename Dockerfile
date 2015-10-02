@@ -11,6 +11,7 @@ ADD *.sh /opt/bioshadock
 RUN systemctl enable apache2
 ADD shadock /opt/bioshadock/shadock
 ADD CHANGES.txt README.md /opt/bioshadock/
+ADD requirements.txt /opt/bioshadock/
 ADD *.py /opt/bioshadock/
 RUN cd /opt/bioshadock && pip install -r requirements.txt
 RUN cd /opt/bioshadock && python setup.py develop
