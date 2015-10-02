@@ -27,7 +27,6 @@ pyramid-mako==1.0.2
 redis==2.10.3
 repoze.lru==0.6
 requests==2.6.2
--e git+git@bitbucket.org:osallou/bioshadock.git@ea802ca7d1a4df66be7a6e1b829a9886f0cfad0c#egg=shadock-master
 six==1.9.0
 smmap==0.9.0
 translationstring==1.3

@@ -3,5 +3,5 @@
 if [ "$1" eq "web"]; then
     pserve development.ini
 else
-    python builder.py start
+    python builder.py run
 fi
