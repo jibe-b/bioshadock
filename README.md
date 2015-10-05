@@ -38,6 +38,8 @@ need to also setup registry location to match registry v2. Should in fact specif
     gunicorn -p bioshadock.pid --log-config=production.ini --paste production.ini & (for prod)
 
     # For background builder
+    # Can set environ BIOSHADOCK_CONFIG to specify config file (development.ini,
+    # ...)
     python builder.py start    
 
 ## Dev / Debug

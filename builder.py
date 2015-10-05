@@ -1,6 +1,7 @@
 import sys
 import signal
 import os
+import ConfigParser
 import time
 from io import BytesIO
 
@@ -28,15 +29,25 @@ class BioshadockDaemon(Daemon):
   cli = None
 
   def run(self):
+      config_file = "development.ini"
+      if "BIOSHADOCK_CONFIG" in os.environ:
+          config_file = os.environ["BIOSHADOCK_CONFIG"]
+      config = ConfigParser.ConfigParser()
+      config.readfp(open(config_file))
       while True:
           print "new run"
           if BioshadockDaemon.db_mongo is None:
-              mongo = MongoClient('mongodb://localhost:27017/')
+              mongo = MongoClient(config.get('app:main','mongo_url')
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
           if BioshadockDaemon.db_redis is None:
               BioshadockDaemon.db_redis = redis.StrictRedis(host='localhost', port=6379, db=0)
           if BioshadockDaemon.cli is None:
-              BioshadockDaemon.cli = Client(base_url='tcp://127.0.0.1:2375')
+              if config.get('app:main', 'docker_connect'):
+                  BioshadockDaemon.cli = Client(base_url=config.get('app:main',
+                                                'docker_connect'))
+              else:
+                  BioshadockDaemon.cli = Client()
+
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           if build is not None:
               build = loads(build)
@@ -58,7 +69,12 @@ class BioshadockDaemon(Daemon):
                   Repo.clone_from(gitrepo, git_repo_dir)
 
               f = BytesIO(dockerfile.encode('utf-8'))
-              BioshadockDaemon.cli = Client(base_url='tcp://127.0.0.1:2375')
+              if config.get('app:main', 'docker_connect'):
+                  BioshadockDaemon.cli = Client(base_url=config.get('app:main',
+                                                'docker_connect'))
+              else:
+                  BioshadockDaemon.cli = Client()
+
               response = [line for line in BioshadockDaemon.cli.build(
                   fileobj=f, rm=True, tag="cloud-30.genouest.org/"+build['id'])]
               build['response'] = response
