@@ -2,10 +2,6 @@
 *.der
 *.csr
 *.pem
-!apache2/bioshadock.crt
-!apache2/bioshadock.key
-*.key
-*.crt
 
 *.pub
 
