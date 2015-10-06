@@ -17,4 +17,4 @@ RUN cd /opt/bioshadock && . benv/bin/activate && pip install -r requirements.txt
 RUN cd /opt/bioshadock && . benv/bin/activate && python setup.py develop
 WORKDIR /opt/bioshadock
 RUN mkdir -p /opt/bioshadock
-ENTRYPOINT ["start.sh"]
+ENTRYPOINT ["/opt/bioshadock/start.sh"]
