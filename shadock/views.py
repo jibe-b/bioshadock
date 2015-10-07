@@ -10,6 +10,7 @@ import struct
 import re
 import urllib3
 import copy
+import logging
 
 from bson import json_util
 from bson.json_util import dumps
@@ -26,6 +27,8 @@ from cryptography.hazmat.primitives import serialization
 
 from basicauth import decode
 import pymongo
+
+from ldap3 import Server, Connection, AUTH_SIMPLE, STRATEGY_SYNC, STRATEGY_ASYNC_THREADED, SEARCH_SCOPE_WHOLE_SUBTREE, GET_ALL_INFO
 
 #request.registry.settings['admin']
 #user = request.registry.db_mongo['users'].find_one({'id': user_id})
@@ -49,18 +52,13 @@ def can_push_to_library(username, request):
 
 def valid_user(username, password, request):
     #TODO manage auth
-    print "Add fake user for test"
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None or 'password' not in user:
-        # TODO check in ldap
-
-        # TODO check auth with ldap
-        print 'ldap user'
         ldap_dn = request.registry.settings['ldap.dn']
         base_dn = 'ou=People,' + ldap_dn
         ldapfilter = "(&(|(uid=" + username + ")(mail=" + username + ")))"
         try:
-            attrs = ['uid, mail']
+            attrs = ['uid', 'mail']
             con = Connection(request.registry.ldap_server, auto_bind=True, client_strategy=STRATEGY_SYNC, check_names=True)
             con.search(base_dn, ldapfilter, SEARCH_SCOPE_WHOLE_SUBTREE, attributes=attrs)
             if con.response:
@@ -70,8 +68,7 @@ def valid_user(username, password, request):
                     user_dn = str(r['dn'])
                     user_id = r['attributes']['uid']
                 con.unbind()
-                ## TODO CHECK PASSWORD
-                con = Connection(ldap_server, auto_bind=True, read_only=True, client_strategy=STRATEGY_SYNC, user=user_dn, password=password, authentication=AUTH_SIMPLE, check_names=True)
+                con = Connection(request.registry.ldap_server, auto_bind=True, read_only=True, client_strategy=STRATEGY_SYNC, user=user_dn, password=password, authentication=AUTH_SIMPLE, check_names=True)
                 con.unbind()
 
             else:
