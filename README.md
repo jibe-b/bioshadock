@@ -35,7 +35,7 @@ need to also setup registry location to match registry v2. Should in fact specif
 
     python setup.py develop
     pserve development.ini (for dev)
-    gunicorn -p bioshadock.pid --log-config=production.ini --paste production.ini & (for prod)
+    gunicorn -D -p bioshadock.pid --log-config=production.ini --paste production.ini  (for prod)
 
     # For background builder
     # Can set environ BIOSHADOCK_CONFIG to specify config file (development.ini,
