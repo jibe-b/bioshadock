@@ -37,7 +37,7 @@ class BioshadockDaemon(Daemon):
       while True:
           print "new run"
           if BioshadockDaemon.db_mongo is None:
-              mongo = MongoClient(config.get('app:main','mongo_url')
+              mongo = MongoClient(config.get('app:main','mongo_url'))
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
           if BioshadockDaemon.db_redis is None:
               BioshadockDaemon.db_redis = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -69,14 +69,10 @@ class BioshadockDaemon(Daemon):
                   Repo.clone_from(gitrepo, git_repo_dir)
 
               f = BytesIO(dockerfile.encode('utf-8'))
-              if config.get('app:main', 'docker_connect'):
-                  BioshadockDaemon.cli = Client(base_url=config.get('app:main',
-                                                'docker_connect'))
-              else:
-                  BioshadockDaemon.cli = Client()
+              BioshadockDaemon.cli = Client()
 
               response = [line for line in BioshadockDaemon.cli.build(
-                  fileobj=f, rm=True, tag="cloud-30.genouest.org/"+build['id'])]
+                  fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id'])]
               build['response'] = response
               if build['response']:
                   last = build['response'][len(build['response'])-1]
@@ -86,7 +82,9 @@ class BioshadockDaemon(Daemon):
                   else:
                       build['status'] = True
                       build['image_id'] = matches.group(1)
-                      p = subprocess.Popen(["docker","-H","127.0.0.1:2375","push","cloud-30.genouest.org/"+build['id']])
+                      p= subprocess.Popen(["docker",
+                                        "push",
+                                        config.get('app:main', 'service')+"/"+build['id']])
                       #response = [line for line in BioshadockDaemon.cli.push("cloud-30.genouest.org/"+build['id'], stream=True)]
                       #print str(response)
 
