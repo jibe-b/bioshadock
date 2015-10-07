@@ -56,7 +56,7 @@ class BioshadockDaemon(Daemon):
               gitrepo = build['git']
               do_git = False
               git_repo_dir = None
-              if gitrepo is not None and gitrepo:
+              if gitrepo is not None and gitrepo and gitrepo != 'none':
                   # TODO clone repo in a dir, chdir to repo and optionally write
                   # dockerfile
                   git_repo_dir = tempfile.mkdtemp(suffix='.git')

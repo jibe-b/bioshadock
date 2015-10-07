@@ -10,7 +10,7 @@
         <div class="row">
             <div class="col-sm-6">
                 <div><h3>Description</h3></div>
-                <div onaftersave="proposesave()" editable-textarea="container.meta.description">{{container.meta.description}}</div>
+                <div onaftersave="proposesave()" editable-textarea="container.meta.description">{{container.meta.description||'none'}}</div>
                 <div><h3>General info</h3></div>
                 <div class="checkbox" ng-if="container.user_can_push">
                     <label>
@@ -19,7 +19,7 @@
                 </div>
                 <div>Author: {{container.user}}</div>
                 <div ng-if="container.user_can_push">
-                     Git repository: <div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git}}</div>
+                    <h4>Git repository:</h4><div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git || 'none'}}</div>
                 </div>
                 <div>Architecture: {{manifest.architecture}}</div>
                 <div>Tag: {{manifest.tag}}</div>
