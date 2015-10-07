@@ -19,6 +19,7 @@ Or append the content of the file in /etc/ssl/certs/ca-certificates.crt
     <h3>How to push to the repository</h3>
 
     <pre>
+        docker login {{service}}
         docker tag XYZ {{service}}/X/Y/Z
         docker push {{service}}/X/Y/Z
     </pre>
