@@ -85,6 +85,12 @@ builder: background Docker image builder
   Certs should contain bioshadock.crt, bioshadock.key , ...
 
 
+# Client
+
+    docker login cloud-30.genouest.org (registry)
+    # Fill credentials
+    docker push cloud-30.genouest.org/osallou/testimage
+
 
 # Credits
 https://github.com/hectorj2f/codemirror-docker
