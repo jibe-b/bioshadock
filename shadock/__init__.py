@@ -55,6 +55,7 @@ def main(global_config, **settings):
     config.add_route('user_bind', '/user/bind')
     config.add_route('user', '/user/{id}')
     config.add_route('containers', '/container')
+    config.add_route('containers_all', '/container/all')
     config.add_route('containers_latest', '/container/latest')
     config.add_route('containers_search', '/container/search')
     config.add_route('containers_new', '/container/new')

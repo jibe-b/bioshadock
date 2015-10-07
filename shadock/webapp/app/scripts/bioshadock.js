@@ -26,6 +26,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/mycontainers.html',
     controller: 'mycontainersCtrl'
   })
+  .when('/all/containers', {
+    templateUrl: 'views/mycontainers.html',
+    controller: 'allcontainersCtrl'
+  })
   .when('/my/new', {
     templateUrl: 'views/newcontainer.html',
     controller: 'newcontainerCtrl'
@@ -371,6 +375,15 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('mycontainersCtrl',
     function ($scope, $route, Container) {
         Container.query().$promise.then(function(data) {
+            $scope.containers = data;
+        });
+        $scope.show_container = function(data) {
+             location.replace('#/container/'+data.id);
+        };
+})
+.controller('allcontainersCtrl',
+    function ($scope, $route, Container) {
+        Container.query_all().$promise.then(function(data) {
             $scope.containers = data;
         });
         $scope.show_container = function(data) {

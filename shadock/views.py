@@ -168,14 +168,34 @@ def user_bind(request):
 def search_es(request):
     q = request.params['q']
     user = is_logged(request)
+
+    conditions = []
+    key = "_all"
+    value = q
+    if ":" in q:
+        elts = q.split(":")
+        key = 'meta.' + elts[0]
+        value = elts[1]
+    query = [ {"term": {key: value}}]
     if user is None:
-        q = q + 'AND visible:true'
+        query.append({"term": {"visible": True}})
     else:
-        q = q + 'AND (visible:true OR user:"'+user['id']+'" OR acl_push.members:"'+user['id']+'" OR acl_pull.members:"'+user['id']+'")'
+        conditions.append({"term": {"visible": True}})
+        conditions.append({"term": {"user": user['id']}})
+        conditions.append({"term": {"acl_push.members": user['id']}})
+        conditions.append({"term": {"acl_pull.members": user['id']}})
+    res = request.registry.es.search(
+      index = "bioshadock",
+      search_type = 'query_then_fetch',
+      size = 1000,
+      body = {
+        "query" : { "filtered" : {  "filter" : { "bool" : 
+                      {"must": query, "should": conditions},
+                  } } },
 
-    res = request.registry.es.search(index="bioshadock", doc_type='container', q=q, size=1000)
+      })
+
     return res
-
 
 @view_config(route_name='containers_latest', renderer='json', request_method='GET')
 def containers_latest(request):
@@ -184,6 +204,18 @@ def containers_latest(request):
     for container in repos:
         library_containers.append(container)
     return library_containers
+
+@view_config(route_name='containers_all', renderer='json', request_method='GET')
+def containers_all(request):
+    user = is_logged(request)
+    if user is None or not is_admin(user['id'], request):
+        return HTTPForbidden()
+    repos = request.registry.db_mongo['repository'].find()
+    user_repos = []
+    for repo in repos:
+        user_repos.append(repo)
+    return user_repos
+
 
 @view_config(route_name='containers', renderer='json', request_method='GET')
 def containers(request):

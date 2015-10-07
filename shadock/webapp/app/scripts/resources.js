@@ -41,6 +41,12 @@
 
     function Container($resource) {
         return $resource('/container/:id', {}, {
+            query_all: {
+                url: '/container/all',
+                method: 'GET',
+                isArray: true,
+                cache: false
+            },
             create_new: {
                 url: '/container/new',
                 method: 'POST',
