@@ -107,6 +107,9 @@ def is_logged(request):
 
 @view_config(route_name='users', renderer='json', request_method='GET')
 def users(request):
+    session_user = is_logged(request)
+    if session_user is None:
+        return HTTPForbidden('User not logged')
     users = request.registry.db_mongo['users'].find({})
     res = []
     for user in users:
@@ -189,7 +192,7 @@ def search_es(request):
       search_type = 'query_then_fetch',
       size = 1000,
       body = {
-        "query" : { "filtered" : {  "filter" : { "bool" : 
+        "query" : { "filtered" : {  "filter" : { "bool" :
                       {"must": query, "should": conditions},
                   } } },
 
