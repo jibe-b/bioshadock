@@ -49,6 +49,7 @@ class BioshadockDaemon(Daemon):
                   BioshadockDaemon.cli = Client()
 
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
+          dockerfile = None
           if build is not None:
               build = loads(build)
               print str(build)
@@ -60,16 +61,20 @@ class BioshadockDaemon(Daemon):
                   # TODO clone repo in a dir, chdir to repo and optionally write
                   # dockerfile
                   git_repo_dir = tempfile.mkdtemp(suffix='.git')
+                  Repo.clone_from(gitrepo, git_repo_dir)
+                  print str(git_repo_dir)
                   os.chdir(git_repo_dir)
                   if dockerfile:
                       print "Overwrite Dockerfile"
                       f = open('Dockerfile', 'w')
                       f.write(dockerfile.encode('utf-8'))
                       f.close()
-                  Repo.clone_from(gitrepo, git_repo_dir)
+                  else:
+                      print "Use git Dockerfile"
+                      with open ("Dockerfile", "r") as gitDockerfile:
+                          dockerfile=gitDockerfile.read().encode('utf-8')
 
               f = BytesIO(dockerfile.encode('utf-8'))
-              BioshadockDaemon.cli = Client()
 
               response = [line for line in BioshadockDaemon.cli.build(
                   fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id'])]
@@ -90,7 +95,9 @@ class BioshadockDaemon(Daemon):
 
               else:
                   build['status'] = False
-              BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},{'$push': {'builds': build}})
+              BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
+                                                       {'$push': {'builds': build},
+                                                       '$set':{'meta.Dockerfile': dockerfile}})
               if do_git:
                   cur_dir = os.path.dirname(os.path.realpath(__file__))
                   os.chdir(cur_dir)
