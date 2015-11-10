@@ -1,7 +1,7 @@
   <tabset justified="true">
     <tab heading="Info" active="true">
         <div class="row">
-            <h2>{{container.id}}</h2>
+            <h2>{{container.id}} <span class="pull-right"><button class="btn btn-danger" ng-click="delete_container()">Delete</button></span></h2>
             <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
         </div>
         <div class="alert alert-info" role="alert">

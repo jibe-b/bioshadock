@@ -350,6 +350,7 @@ def container_delete(request):
     if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
         return HTTPForbidden()
     request.registry.db_mongo['repository'].remove({'id': repo_id})
+    request.registry.es.delete(index="bioshadock", doc_type='container', id=repo_id)
     return repo
 
 @view_config(route_name='container', renderer='json', request_method='POST')
