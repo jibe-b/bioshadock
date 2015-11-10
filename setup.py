@@ -23,7 +23,9 @@ requires = [
     'elasticsearch',
     'GitPython',
     'bcrypt',
-    'ldap3'
+    'ldap3',
+    'gunicorn',
+    'gevent'
     ]
 
 setup(name='shadock',

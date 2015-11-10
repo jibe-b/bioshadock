@@ -51,7 +51,6 @@ def can_push_to_library(username, request):
     return False
 
 def valid_user(username, password, request):
-    #TODO manage auth
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None or 'password' not in user:
         ldap_dn = request.registry.settings['ldap.dn']
@@ -76,7 +75,10 @@ def valid_user(username, password, request):
                 return False
 
             if user_dn is not None and user is None:
-                request.registry.db_mongo['users'].insert({'id': username, 'role': 'contributor'})
+                role = 'contributor'
+                if username in request.registry.admin:
+                    role = 'admin'
+                request.registry.db_mongo['users'].insert({'id': username, 'role': role})
 
         except Exception as e:
             logging.error(str(e))

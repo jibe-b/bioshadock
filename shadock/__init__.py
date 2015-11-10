@@ -27,6 +27,8 @@ def main(global_config, **settings):
     r = redis.StrictRedis(host=config.registry.settings['redis_host'], port=int(config.registry.settings['redis_port']), db=0)
     config.registry.db_redis = r
 
+    config.registry.admin = config.registry.settings['admin'].split(',')
+
     config.registry.es = Elasticsearch(config.registry.settings['elastic_host'].split(','))
 
     config.registry.ldap_server = None

@@ -40,7 +40,7 @@ class BioshadockDaemon(Daemon):
               mongo = MongoClient(config.get('app:main','mongo_url'))
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
           if BioshadockDaemon.db_redis is None:
-              BioshadockDaemon.db_redis = redis.StrictRedis(host='localhost', port=6379, db=0)
+              BioshadockDaemon.db_redis = redis.StrictRedis(host=config.get('app:main','redis_host'), port=int(config.get('app:main','redis_port')), db=0)
           if BioshadockDaemon.cli is None:
               if config.get('app:main', 'docker_connect'):
                   BioshadockDaemon.cli = Client(base_url=config.get('app:main',
@@ -90,8 +90,6 @@ class BioshadockDaemon(Daemon):
                       p= subprocess.Popen(["docker",
                                         "push",
                                         config.get('app:main', 'service')+"/"+build['id']])
-                      #response = [line for line in BioshadockDaemon.cli.push("cloud-30.genouest.org/"+build['id'], stream=True)]
-                      #print str(response)
 
               else:
                   build['status'] = False

@@ -29,7 +29,7 @@ registry v1:
 
 registry v2
 
-    docker run --rm -p 5000:5000 -v /root/certs:/root/certs -v /root/registryv2:/registryv2  -e REGISTRY_AUTH=token -e REGISTRY_AUTH_TOKEN_REALM="https://cloud-45.genouest.org/v2/token/" -e REGISTRY_AUTH_TOKEN_SERVICE="cloud-30.genouest.org" -e REGISTRY_AUTH_TOKEN_ISSUER="cloud-45.genouest.org" -e REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/root/certs/wildcard.genouest.org.crt  distribution/distribution /registryv2/config.yml
+    docker run --rm -p 5000:5000 -v /root/certs:/root/certs -v /root/registryv2:/registryv2 -v /root/registry:/registry  -e REGISTRY_AUTH=token -e REGISTRY_AUTH_TOKEN_REALM="https://docker-ui.genouest.org/v2/token/" -e REGISTRY_AUTH_TOKEN_SERVICE="docker-registry.genouest.org" -e REGISTRY_AUTH_TOKEN_ISSUER="docker-ui.genouest.org" -e REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/root/certs/wildcard.genouest.org.crt  registry:2 /registryv2/config.yml
 
 need to also setup registry location to match registry v2. Should in fact specify a config.yml as args and mount it in container for prod.
 

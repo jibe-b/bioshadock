@@ -1,0 +1,87 @@
+###
+# app configuration
+# http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/environment.html
+###
+
+[app:main]
+use = egg:shadock
+
+pyramid.reload_templates = true
+pyramid.debug_authorization = false
+pyramid.debug_notfound = false
+pyramid.debug_routematch = false
+pyramid.default_locale_name = en
+pyramid.includes =
+    pyramid_debugtoolbar
+
+# By default, the toolbar only appears for clients from IP addresses
+# '127.0.0.1' and '::1'.
+# debugtoolbar.hosts = 127.0.0.1 ::1
+
+###
+# wsgi server configuration
+###
+
+mongo_url=mongodb://localhost:27017/
+redis_host=127.0.0.1
+redis_port=6379
+elastic_host=127.0.0.1
+
+dockerregistry=https://docker-registry.genouest.org
+secret_passphrase=shuuutt
+service=docker-registry.genouest.org
+issuer=docker-ui.genouest.org
+
+docker_connect=
+
+admin=
+
+# Set to 0 if base contributor cannot push to private workspace
+contributor_can_push=1
+
+private_key=/root/certs/wildcard.genouest.org.key
+private_key_passphrase=
+public_key=/root/certs/wildcard.genouest.org.crt.simple
+cacert_der=/root/certs/wildcard.genouest.org.der
+
+use_ldap = 0
+ldap.host = 
+ldap.port = 389
+ldap.dn = 
+
+[server:main]
+use = egg:waitress#main
+host = 0.0.0.0
+port = 6543
+
+###
+# logging configuration
+# http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/logging.html
+###
+
+[loggers]
+keys = root, shadock
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = INFO
+handlers = console
+
+[logger_shadock]
+level = DEBUG
+handlers = console
+qualname = shadock
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = DEBUG
+formatter = generic
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s
