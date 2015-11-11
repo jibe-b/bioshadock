@@ -750,7 +750,7 @@ def api_repositories_push(request):
     if request.authorization:
         (type, bearer) = request.authorization
         username, password = decode(bearer)
-        if not valid_user(username, password, request)or not user_can_push(username, repo_id, request):
+        if not valid_user(username, password, request) or not user_can_push(username, repo_id, request):
             return HTTPForbidden()
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
 
@@ -834,7 +834,7 @@ def user_can_push(username, repository, request):
         is_library = True
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
-        if existing_repo['user'] == username or username in existing_repo['acl_push']['members']:
+        if existing_repo['user'] == username or username in existing_repo['acl_push']['members'] or username in request.registry.admin:
             return True
         else:
             return False
@@ -871,7 +871,7 @@ def user_can_pull(username, repository, request):
     #    user_repo = 'library/'+repository
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': user_repo})
     if existing_repo is not None:
-        if existing_repo['user'] == username or username in existing_repo['acl_pull']['members']:
+        if existing_repo['user'] == username or username in existing_repo['acl_pull']['members'] or username in request.registry.admin:
             return True
         else:
             if existing_repo['visible']:
@@ -905,6 +905,7 @@ def api2_token(request):
             if username == 'anonymous':
                 username = account
             elif not valid_user(username, password, request):
+                logging.error("User authentication failure")
                 return HTTPForbidden()
         else:
             username = account
