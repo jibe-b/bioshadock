@@ -129,8 +129,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             $scope.msg = "Missing or empty description";
             return;
         }
-        if($scope.containerDockerfile == '') {
-            $scope.msg = "Missing or empty Docker file";
+        if($scope.containerDockerfile == '' && $scope.containerGit == '') {
+            $scope.msg = "Missing or empty Docker file or git repository, please fill one";
             return;
         }
         //Container.get({'id': $scope.containerName}).$promise.then(function(data){

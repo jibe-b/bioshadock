@@ -18,6 +18,10 @@
           </label>
       </div>
       <div class="form-group">
+        <label for="dockerrepo">Git repository</label>
+        <input type="text" class="form-control" id="dockerrepo" placeholder="Git repository with Dockerfile" ng-model="containerGit" />
+      </div>
+      <div class="form-group">
         <label for="dockerfile">Docker file</label>
         <textarea id="dockerfile" class="dockerfile" ui-codemirror="cmOption"  ng-model="containerDockerfile" >
         </textarea>

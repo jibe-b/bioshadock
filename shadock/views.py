@@ -1001,4 +1001,4 @@ def api_users(request):
 
 @view_config(route_name='home', renderer='json')
 def my_view(request):
-    return HTTPFound(request.static_url('shadock:webapp/dist/'))
+    return HTTPFound(request.static_path('shadock:webapp/dist/'))
