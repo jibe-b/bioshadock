@@ -29,6 +29,8 @@ registry v1:
 
 registry v2
 
+    Web proxy needs to add X-FORWARDED-PROTO header to https requests
+
     docker run --rm -p 5000:5000 -v /root/certs:/root/certs -v /root/registryv2:/registryv2 -v /root/registry:/registry  -e REGISTRY_AUTH=token -e REGISTRY_AUTH_TOKEN_REALM="https://docker-ui.genouest.org/v2/token/" -e REGISTRY_AUTH_TOKEN_SERVICE="docker-registry.genouest.org" -e REGISTRY_AUTH_TOKEN_ISSUER="docker-ui.genouest.org" -e REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/root/certs/wildcard.genouest.org.crt  registry:2 /registryv2/config.yml
 
 need to also setup registry location to match registry v2. Should in fact specify a config.yml as args and mount it in container for prod.
@@ -61,18 +63,6 @@ SSL INFO
 
 openssl x509 -in GSRootCA-2014.cer -inform PEM -text -noout
 
-
-
-
-Docker client: docker -D -H 127.0.0.1:2375 push cloud-30.genouest.org/testosallou
-
-
-# TODO
-
-* user registration (and password recovery)
-* user credentials check
-* checks ACLs when pushing to library
-* add admin setup
 
 # Docker
 
