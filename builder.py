@@ -4,6 +4,8 @@ import os
 import ConfigParser
 import time
 from io import BytesIO
+import logging
+import logging.config
 
 import json
 import datetime
@@ -34,8 +36,9 @@ class BioshadockDaemon(Daemon):
           config_file = os.environ["BIOSHADOCK_CONFIG"]
       config = ConfigParser.ConfigParser()
       config.readfp(open(config_file))
+      logging.config.fileConfig(config_file)
       while True:
-          print "new run"
+          logging.info("New build run")
           if BioshadockDaemon.db_mongo is None:
               mongo = MongoClient(config.get('app:main','mongo_url'))
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
@@ -47,12 +50,14 @@ class BioshadockDaemon(Daemon):
                                                 'docker_connect'))
               else:
                   BioshadockDaemon.cli = Client()
+              BioshadockDaemon.cli.login(username=config.get('app:main','push_auth_user'), password=config.get('app:main','push_auth_password'),
+                                         email=config.get('app:main','push_auth_email'),registry=config.get('app:main','service'))
 
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           dockerfile = None
           if build is not None:
               build = loads(build)
-              print str(build)
+              logging.debug(str(build))
               dockerfile = build['dockerfile']
               gitrepo = build['git']
               do_git = False
@@ -62,15 +67,15 @@ class BioshadockDaemon(Daemon):
                   # dockerfile
                   git_repo_dir = tempfile.mkdtemp(suffix='.git')
                   Repo.clone_from(gitrepo, git_repo_dir)
-                  print str(git_repo_dir)
+                  logging.debug(str(git_repo_dir))
                   os.chdir(git_repo_dir)
                   if dockerfile:
-                      print "Overwrite Dockerfile"
+                      logging.debug("Overwrite Dockerfile")
                       f = open('Dockerfile', 'w')
                       f.write(dockerfile.encode('utf-8'))
                       f.close()
                   else:
-                      print "Use git Dockerfile"
+                      logging.debug("Use git Dockerfile")
                       with open ("Dockerfile", "r") as gitDockerfile:
                           dockerfile=gitDockerfile.read().encode('utf-8')
 
