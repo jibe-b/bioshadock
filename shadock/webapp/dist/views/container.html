@@ -18,11 +18,14 @@
                     </label>
                 </div>
                 <div>Author: {{container.user}}</div>
-                <div ng-if="container.user_can_push">
-                    <h4>Git repository:</h4><div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git || 'none'}}</div>
-                </div>
                 <div>Architecture: {{manifest.architecture}}</div>
                 <div>Tag: {{manifest.tag}}</div>
+
+                <div ng-if="container.user_can_push">
+                    <h4>Git repository:</h4>
+                    <div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git || 'none'}}</div>
+                    <div>Build hook url: <span>/container/git/{{container.id}}</span></div>
+                </div>
                 <div><h3>User tags</h3>
                     <form ng-if="container.user_can_push" class="form-inline">
                       <div class="form-group">
