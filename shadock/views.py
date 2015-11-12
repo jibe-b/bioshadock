@@ -214,8 +214,10 @@ def containers_latest(request):
 def containers_all(request):
     user = is_logged(request)
     if user is None or not is_admin(user['id'], request):
-        return HTTPForbidden()
-    repos = request.registry.db_mongo['repository'].find()
+        #return HTTPForbidden()
+        repos = request.registry.db_mongo['repository'].find({'visible': True})
+    else:
+        repos = request.registry.db_mongo['repository'].find()
     user_repos = []
     for repo in repos:
         user_repos.append(repo)
@@ -999,4 +1001,4 @@ def api_users(request):
 
 @view_config(route_name='home', renderer='json')
 def my_view(request):
-    return HTTPFound(request.static_url('shadock:webapp/app/'))
+    return HTTPFound(request.static_url('shadock:webapp/dist/'))

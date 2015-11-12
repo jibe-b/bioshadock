@@ -1,0 +1,20 @@
+<div class="row">
+    <table id="containers" datatable="ng"  class="table table-bordered table-striped row-border hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Description</th>
+                <th>User id</th>
+                <th>Visibility</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="container in containers track by container.id">
+                <td ng-click="show_container(container)">{{ ::container.id }}</td>
+                <td>{{::container.meta.description}}</td>
+                <td>{{::container.user}}</td>
+                <td>{{::container.visible}}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

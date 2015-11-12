@@ -1,5 +1,19 @@
 body { padding-top: 70px; }
 
+.logo { max-width: 150px; margin-top: -20px; }
+
+.content-container {margin-top: 50px;}
+
+#logo {
+    border-top: 1px solid #e2e2e2;
+    background: #fff;
+    border-bottom: 1px solid #e2e2e2;
+    text-align: center;
+    padding: 5px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 td span { margin-left: 5px;}
 
 .basic_search {

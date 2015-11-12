@@ -47,7 +47,7 @@ def main(global_config, **settings):
 
 
     config.add_static_view('static', 'static', cache_max_age=3600)
-    config.add_static_view('app', 'shadock:webapp/app/')
+    config.add_static_view('app', 'shadock:webapp/dist/')
     config.add_route('home', '/')
     config.add_route('config', '/config')
     config.add_route('search', '/search')
