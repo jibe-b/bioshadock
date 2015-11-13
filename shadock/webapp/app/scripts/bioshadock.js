@@ -177,6 +177,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.container_id = $routeParams.path;
         $scope.tag = 'latest'
         var user = Auth.getUser();
+        $scope.user = user;
         $scope.show_save = false;
         $scope.newtag = '';
         $scope.newterm = '';
