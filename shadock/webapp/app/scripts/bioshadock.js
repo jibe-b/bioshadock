@@ -45,6 +45,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
   .when('/login', {
     templateUrl: 'views/login.html',
     controller: 'loginCtrl'
+  })
+  .when('/user/:id', {
+    templateUrl: 'views/user.html',
+    controller: 'usermngtCtrl'
   });
 
 })
@@ -446,6 +450,12 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     $modalInstance.dismiss('cancel');
   };
 })
+
+.controller('usermngtCtrl',
+    function($scope, $rootScope, $routeParams, $log, $location, $window, Auth) {
+    $scope.user = Auth.getUser();
+})
+
 .controller('userCtrl',
     function($scope, $rootScope, $routeParams, $log, $location, $window, Auth, User) {
         $scope.is_logged = false;

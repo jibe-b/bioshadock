@@ -82,6 +82,16 @@ builder: background Docker image builder
     docker push cloud-30.genouest.org/osallou/testimage
 
 
+# API
+
+API key is available in user page.
+
+get all public containers:  /container/all
+get container tags: /container/tags/*id
+build container from a git repo: /container/git/*id?apikey=XX
+tag container: /container/tag/*id/tagvalue?apikey=XX
+
+
 # Credits
 https://github.com/hectorj2f/codemirror-docker
 http://commons.wikimedia.org/wiki/File:Shipping_containers_at_Clyde.jpg

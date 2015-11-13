@@ -81,8 +81,12 @@ class BioshadockDaemon(Daemon):
 
               f = BytesIO(dockerfile.encode('utf-8'))
 
+              build_tag = ''
+              if 'tag' in build and build['tag']:
+                  build_tag = ':'+build['tag']
+
               response = [line for line in BioshadockDaemon.cli.build(
-                  fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id'])]
+                  fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
               build['response'] = response
               if build['response']:
                   last = build['response'][len(build['response'])-1]

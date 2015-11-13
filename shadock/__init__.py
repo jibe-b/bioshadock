@@ -65,6 +65,7 @@ def main(global_config, **settings):
     config.add_route('container_tags', '/container/tags/*id')
     config.add_route('container_dockerfile', '/container/dockerfile/*id')
     config.add_route('container_git', '/container/git/*id')
+    config.add_route('container_tag', '/container/tag/*id')
     config.add_route('container', '/container/*id')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')

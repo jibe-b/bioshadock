@@ -11,6 +11,8 @@ import re
 import urllib3
 import copy
 import logging
+import string
+import random
 
 from bson import json_util
 from bson.json_util import dumps
@@ -78,7 +80,8 @@ def valid_user(username, password, request):
                 role = 'contributor'
                 if username in request.registry.admin:
                     role = 'admin'
-                request.registry.db_mongo['users'].insert({'id': username, 'role': role})
+                apikey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
+                request.registry.db_mongo['users'].insert({'id': username, 'role': role, 'apikey': apikey})
 
         except Exception as e:
             logging.error(str(e))
@@ -260,13 +263,29 @@ def container_manifest(request):
     res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
     return res
 
-@view_config(route_name='container_git', renderer='json')
-def container_git(request):
+
+@view_config(route_name='container_tag', renderer='json')
+def container_tag(request):
     '''
-    trigger for a git rebuild, must container a Dockerfile in git repo or in container def
+    Tags a container
+
+    /container/tag/x/y/z/:tagid
     '''
     user = is_logged(request)
-    repo_id = '/'.join(request.matchdict['id'])
+
+    if user is None:
+        try:
+            apikey = request.params['apikey']
+            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            if user is None:
+                return HTTPForbidden()
+        except Exception:
+            return HTTPForbidden()
+
+    repo_elts = list(request.matchdict['id'])
+    tag = repo_elts.pop()
+    repo_id = '/'.join(repo_elts)
+
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if repo is None:
         return HTTPNotFound()
@@ -275,6 +294,9 @@ def container_git(request):
             return HTTPForbidden()
         if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
+
+    user_id = user['id']
+
     container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if 'git' not in container['meta']:
         return HTTPForbidden()
@@ -283,7 +305,53 @@ def container_git(request):
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
-        'user': user['id']
+        'user': user_id,
+        'tag': tag
+    }
+    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+    return {'repo': repo_id, 'tag': tag}
+
+
+@view_config(route_name='container_git', renderer='json')
+def container_git(request):
+    '''
+    trigger for a git rebuild, must container a Dockerfile in git repo or in container def
+    '''
+    user = is_logged(request)
+
+    if user is None:
+        try:
+            apikey = request.params['apikey']
+            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            if user is None:
+                return HTTPForbidden()
+        except Exception:
+            return HTTPForbidden()
+
+    repo_id = '/'.join(request.matchdict['id'])
+
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+
+    user_id = 'anonymous'
+    if user is not None:
+        user_id = user['id']
+
+    container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if 'git' not in container['meta']:
+        return HTTPForbidden()
+    newbuild = {
+        'id': repo_id,
+        'date': datetime.datetime.now(),
+        'dockerfile': container['meta']['Dockerfile'],
+        'git': container['meta']['git'],
+        'user': user_id
     }
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
