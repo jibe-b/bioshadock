@@ -17,6 +17,7 @@
     "angular-bootstrap-slider": "~0.1.1",
     "codemirror": "~5.0.0",
     "angular-ui-codemirror": "~0.2.3",
-    "angular-xeditable": "~0.1.9"
+    "angular-xeditable": "~0.1.9",
+    "bootstrap-social": "~4.10.1"
   }
 }

@@ -510,6 +510,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 if(user['id'] !== undefined) {
                     Auth.setUser(user);
                     $rootScope.$broadcast('loginCtrl.login', user);
+                    $location.search('token', null);
                     $location.path('/');
                 }
                 else{

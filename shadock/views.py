@@ -1088,8 +1088,13 @@ def my_view(request):
 )
 def login_complete_view(request):
     context = request.context
+    user_id = None
+    if context.profile['preferredUsername']:
+        user_id = context.profile['preferredUsername']
+    else:
+        user_id = context.profile['accounts'][0]['username']
     result = {
-        'id': context.profile['verifiedEmail'],
+        'id': user_id,
         'provider_type': context.provider_type,
         'provider_name': context.provider_name,
         'profile': context.profile,
