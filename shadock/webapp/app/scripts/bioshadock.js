@@ -496,11 +496,13 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
 })
 .controller('loginCtrl',
-    function ($scope, $rootScope, $route, $location, $window, Auth, User) {
+    function ($scope, $rootScope, $route, $routeParams, $location, $window, Auth, User) {
+        $scope.token = "";
+        
         $scope.uid = "";
         $scope.password = "";
         $scope.authenticate = function() {
-            User.authenticate({},{'uid':$scope.uid, 'password':$scope.password}).$promise.then(function(data){
+            User.authenticate({},{'uid':$scope.uid, 'password':$scope.password, 'token': $scope.token}).$promise.then(function(data){
                 var user = data['user'];
                 if($window.sessionStorage != null) {
                     $window.sessionStorage.token = data.token;
@@ -520,6 +522,11 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 $scope.msg = "Could not authenticate!";
             });
 
+        };
+
+        if($routeParams.token != undefined) {
+            $scope.token = $routeParams.token;
+            $scope.authenticate();
         };
 })
 .service('Auth',

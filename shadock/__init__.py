@@ -1,5 +1,9 @@
 from pyramid.config import Configurator
 from pyramid.renderers import JSON
+from pyramid.events import BeforeRender
+from pyramid_beaker import session_factory_from_settings
+
+
 
 import sys
 import json
@@ -19,6 +23,13 @@ def main(global_config, **settings):
     """
     config = Configurator(settings=settings)
     config.include('pyramid_chameleon')
+
+    config.include('velruse.providers.google_oauth2')
+    config.add_google_oauth2_login_from_settings()
+    config.add_subscriber(before_render, BeforeRender)
+
+    my_session_factory = session_factory_from_settings(settings)
+    config.set_session_factory(my_session_factory)
 
     mongo = MongoClient(config.registry.settings['mongo_url'])
     dbmongo = mongo['mydockerhub']
@@ -47,7 +58,7 @@ def main(global_config, **settings):
 
 
     config.add_static_view('static', 'static', cache_max_age=3600)
-    config.add_static_view('app', 'shadock:webapp/dist/')
+    config.add_static_view('app', 'shadock:webapp/app/')
     config.add_route('home', '/')
     config.add_route('config', '/config')
     config.add_route('search', '/search')
@@ -91,3 +102,8 @@ def main(global_config, **settings):
 
     config.add_renderer('json', json_renderer)
     return config.make_wsgi_app()
+
+
+def before_render(event):
+    event["username"] = event['request'].authenticated_userid
+

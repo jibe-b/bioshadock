@@ -161,8 +161,20 @@ def user_bind(request):
     form = json.loads(request.body, encoding=request.charset)
     uid = form['uid']
     password = form['password']
-    if not valid_user(uid, password, request):
-        return HTTPUnauthorized('Invalid credentials')
+    token = form['token']
+    if token:
+        secret = request.registry.settings['secret_passphrase']
+        user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
+        uid = user['user']['id']
+        user = request.registry.db_mongo['users'].find_one({'id': uid})
+        if user is None:
+            role = 'visitor'
+            apikey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
+            request.registry.db_mongo['users'].insert({'id': uid, 'role': role, 'apikey': apikey})
+
+    else:
+        if not valid_user(uid, password, request):
+            return HTTPUnauthorized('Invalid credentials')
     user = request.registry.db_mongo['users'].find_one({'id': uid})
     secret = request.registry.settings['secret_passphrase']
     del user['_id']
@@ -1070,3 +1082,21 @@ def api_users(request):
 @view_config(route_name='home', renderer='json')
 def my_view(request):
     return HTTPFound(request.static_path('shadock:webapp/dist/'))
+
+@view_config(
+    context='velruse.AuthenticationComplete',
+)
+def login_complete_view(request):
+    context = request.context
+    result = {
+        'id': context.profile['verifiedEmail'],
+        'provider_type': context.provider_type,
+        'provider_name': context.provider_name,
+        'profile': context.profile,
+        'credentials': context.credentials,
+    }
+    secret = request.registry.settings['secret_passphrase']
+    token = jwt.encode({'user': result,
+                        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=36000),
+                        'aud': 'urn:bioshadock/auth'}, secret)
+    return HTTPFound(request.static_url('shadock:webapp/app/')+"index.html#login?token="+token)
