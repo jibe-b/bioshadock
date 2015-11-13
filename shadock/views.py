@@ -81,7 +81,10 @@ def valid_user(username, password, request):
                 if username in request.registry.admin:
                     role = 'admin'
                 apikey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
-                request.registry.db_mongo['users'].insert({'id': username, 'role': role, 'apikey': apikey})
+                request.registry.db_mongo['users'].insert({'id': username,
+                                                           'role': role,
+                                                           'apikey': apikey,
+                                                           'type': 'ldap'})
 
         except Exception as e:
             logging.error(str(e))
@@ -167,10 +170,15 @@ def user_bind(request):
         user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
         uid = user['user']['id']
         user = request.registry.db_mongo['users'].find_one({'id': uid})
+        if user['type'] == 'ldap':
+            return HTTPUnauthorized('Trying to connect with the id of an existing user')
         if user is None:
             role = 'visitor'
             apikey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(20))
-            request.registry.db_mongo['users'].insert({'id': uid, 'role': role, 'apikey': apikey})
+            request.registry.db_mongo['users'].insert({'id': uid,
+                                                       'role': role,
+                                                       'apikey': apikey,
+                                                       'type': 'social'})
 
     else:
         if not valid_user(uid, password, request):
