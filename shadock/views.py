@@ -929,6 +929,16 @@ def user_can_push(username, repository, request):
         else:
             return False
     else:
+        user_db = request.registry.db_mongo['users'].find_one({'id': username})
+        if user_db is None:
+            return False
+        else:
+            # Contributors can push only is specified
+            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != 1:
+                return False
+            # Visitors cannot push
+            if user_db['role'] == 'visitor':
+                return False
         if not is_library or (is_library and can_push_to_library(username, request)):
             repo = { 'id' : user_repo,
                      'user': username,
