@@ -1,0 +1,687 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Bioshadock API",
+        "description": "API for Bioshadock registry",
+        "version": "1.0.0"
+    },
+    "host": "docker-ui.genouest.org",
+    "schemes": [
+        "https"
+    ],
+    "basePath": "/",
+    "produces": [
+        "application/json"
+    ],
+    "paths": {
+        "/user/bind": {
+            "post": {
+                "summary": "login binding to get an authorization bearer",
+                "description": "Validate authentication and returns a token to be used in |\nAuthorization header bearer for authenticated requests\n",
+                "parameters": [
+                    {
+                        "name": "binding",
+                        "in": "body",
+                        "description": "user credentials",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Binding"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "token",
+                        "schema": {
+                            "type": "object",
+                            "items": {
+                                "$ref": "#/definitions/Token"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "summary": "Query for containers",
+                "description": "Search within public containers with LUCENE syntax.\n",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "description": "LUCENE query.",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of container",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Container"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container": {
+            "get": {
+                "summary": "get user containers (need to be logged)",
+                "description": "Get containers owner by user are able to push in\n",
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of container",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Container"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/all": {
+            "get": {
+                "summary": "List all public containers",
+                "description": "Get containers visible by all users\n",
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of container",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Container"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/new": {
+            "post": {
+                "summary": "Create a container",
+                "description": "Creates a new container (user logged)\n",
+                "parameters": [
+                    {
+                        "name": "container",
+                        "in": "body",
+                        "description": "container info",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Container"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Created container",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/Container"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/search": {
+            "post": {
+                "summary": "Search containers by name",
+                "description": "Search containers visible by user (logged or not) by name\n",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "name pattern (startswith)",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of container",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Container"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/manifest/{id}": {
+            "get": {
+                "summary": "Get container manifest from registry",
+                "description": "Get container maniest (layers, signatures, ...)\n",
+                "tags": [
+                    "Container"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container identifier",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Manifest",
+                        "schema": {
+                            "type": "Object",
+                            "$ref": "#/definitions/Manifest"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/tags/{id}": {
+            "get": {
+                "summary": "Get container tags from registry",
+                "description": "Get container tags (latest, etc.)\n",
+                "tags": [
+                    "Container",
+                    "Tags"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container identifier",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of container",
+                        "schema": {
+                            "type": "array",
+                            "$ref": "#/definitions/Tags"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/dockerfile/{id}": {
+            "post": {
+                "summary": "Update Dockerfile and build container",
+                "description": "UpdateDockerfile or git repo and build the container\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container id",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "build",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/DockerBuild"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Container",
+                    "Dockerfile",
+                    "Build"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "nothing"
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/git/{id}": {
+            "post": {
+                "summary": "Build container from git repo",
+                "description": "Trigger to build the container from a git repo\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container id",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "build",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/DockerBuild"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Container",
+                    "Git",
+                    "Build"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "nothing"
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/tag/{id}/{tag}": {
+            "post": {
+                "summary": "Tag a container",
+                "description": "Build a container and apply provided tag\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container id",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "tag",
+                        "in": "path",
+                        "description": "container tag to set",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    },
+                    {
+                        "name": "build",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/DockerBuild"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Container",
+                    "Build",
+                    "Tag"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container info",
+                        "schema": {
+                            "type": "object",
+                            "items": {
+                                "$ref": "#/definitions/ContainerTag"
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/container/{id}": {
+            "delete": {
+                "summary": "Remove a container",
+                "description": "Deletes the container from Bioshadock, layers are not deleted from registry\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container id",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Container",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/Container"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "update container info",
+                "description": "Update container information (user logged)\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container identifier",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "container",
+                        "description": "container information for update",
+                        "required": true,
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/Container"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated container",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/Container"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "get container info",
+                "description": "Get container information (user logged)\n",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "type": "string",
+                        "description": "container identifier",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "Container"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "requested container",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/Container"
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Container": {
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "object",
+                    "description": "container internal identifier"
+                },
+                "id": {
+                    "type": "string",
+                    "description": "container id"
+                },
+                "library": {
+                    "type": "boolean",
+                    "description": "is container in official library"
+                },
+                "visible": {
+                    "type": "boolean",
+                    "description": "is container public"
+                },
+                "meta": {
+                    "type": "object",
+                    "$ref": "#/definitions/Metadata",
+                    "description": "container metadata"
+                },
+                "acl_push": {
+                    "type": "object",
+                    "$ref": "#/definitions/Members",
+                    "description": "list of members allowed to push"
+                },
+                "acl_pull": {
+                    "type": "object",
+                    "$ref": "#/definitions/Members",
+                    "description": "list of members allowed to pull"
+                }
+            }
+        },
+        "Binding": {
+            "type": "object",
+            "properties": {
+                "-user": {
+                    "type": "string",
+                    "description": "user id"
+                },
+                "-password": {
+                    "type": "string",
+                    "description": "user password"
+                }
+            }
+        },
+        "Token": {
+            "type": "object",
+            "properties": {
+                "-user": {
+                    "type": "object",
+                    "description": "user info"
+                },
+                "-token": {
+                    "type": "string",
+                    "description": "token to add in Authorization header bearer"
+                }
+            }
+        },
+        "ContainerTag": {
+            "type": "object",
+            "properties": {
+                "-repo": {
+                    "type": "string",
+                    "description": "container id"
+                },
+                "-tag": {
+                    "type": "string",
+                    "description": "tag applied"
+                }
+            }
+        },
+        "DockerBuild": {
+            "type": "object",
+            "properties": {
+                "-dockerfile": {
+                    "type": "string",
+                    "description": "Dockerfile content (for Dockerfile build)"
+                },
+                "-git": {
+                    "type": "string",
+                    "description": "git repository (for git repo build)"
+                },
+                "-apikey": {
+                    "type": "string",
+                    "description": "user API key (for git repo build and tag)"
+                }
+            }
+        },
+        "Members": {
+            "type": "object",
+            "properties": {
+                "-members": {
+                    "type": "array",
+                    "description": "user identifiers",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "-groups": {
+                    "type": "array",
+                    "description": "group identifiers",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Metadata": {
+            "type": "object",
+            "properties": {
+                "-Dockerfile": {
+                    "type": "string",
+                    "description": "Dockerfile used to build"
+                },
+                "-git": {
+                    "type": "string",
+                    "description": "Git repository"
+                },
+                "-description": {
+                    "type": "string",
+                    "description": "container description"
+                },
+                "-tags": {
+                    "type": "array",
+                    "description": "container meta tags",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "Tags": {
+            "type": "object",
+            "properties": {
+                "-name": {
+                    "type": "string",
+                    "description": "container name"
+                },
+                "-tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "container tags"
+                }
+            }
+        },
+        "Manifest": {
+            "type": "object"
+        },
+        "Error": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "format": "int32"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "fields": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
