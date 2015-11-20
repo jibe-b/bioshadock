@@ -170,7 +170,7 @@ def user_bind(request):
         user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
         uid = user['user']['id']
         user = request.registry.db_mongo['users'].find_one({'id': uid})
-        if user['type'] == 'ldap':
+        if user is not None and user['type'] == 'ldap':
             return HTTPUnauthorized('Trying to connect with the id of an existing user')
         if user is None:
             role = 'visitor'
