@@ -59,6 +59,13 @@ velruse.google.consumer_secret =
 velruse.github.consumer_key =
 velruse.github.consumer_secret =
 
+# Builder
+# Docker login info to push containers
+push_auth_user = 
+push_auth_password =
+push_auth_email =
+
+
 
 ###
 # wsgi server configuration
