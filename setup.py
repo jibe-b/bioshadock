@@ -26,7 +26,8 @@ requires = [
     'bcrypt',
     'ldap3',
     'gunicorn',
-    'gevent'
+    'gevent',
+    'velruse'
     ]
 
 setup(name='shadock',
