@@ -15,7 +15,7 @@ from bson.objectid import ObjectId
 import redis
 from elasticsearch import Elasticsearch
 import logging
-
+import os
 
 
 def main(global_config, **settings):
@@ -62,7 +62,12 @@ def main(global_config, **settings):
 
 
     config.add_static_view('static', 'static', cache_max_age=3600)
-    config.add_static_view('app', 'shadock:webapp/dist/')
+
+    runenv = "dist"
+    if "BIOSHADOCK_ENV" in os.environ and os.environ["BIOSHADOCK_ENV"] == "dev":
+        runenv = "dev"
+
+    config.add_static_view('app', 'shadock:webapp/'+runenv+'/')
     config.add_route('home', '/')
     config.add_route('config', '/config')
     config.add_route('search', '/search')
