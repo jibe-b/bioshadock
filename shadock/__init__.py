@@ -23,11 +23,13 @@ def main(global_config, **settings):
     """
     config = Configurator(settings=settings)
     config.include('pyramid_chameleon')
-
-    config.include('velruse.providers.google_oauth2')
-    config.add_google_oauth2_login_from_settings()
-    config.include('velruse.providers.github')
-    config.add_github_login_from_settings()
+    social_providers = config.registry.settings['allow_auth'].split(',')
+    if 'google' in social_providers:
+        config.include('velruse.providers.google_oauth2')
+        config.add_google_oauth2_login_from_settings()
+    if 'github' in social_providers:
+        config.include('velruse.providers.github')
+        config.add_github_login_from_settings()
     config.add_subscriber(before_render, BeforeRender)
 
     my_session_factory = session_factory_from_settings(settings)
