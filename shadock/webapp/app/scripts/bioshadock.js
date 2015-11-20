@@ -182,6 +182,20 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.newtag = '';
         $scope.newterm = '';
 
+        $scope.convert_timestamp_to_date = function(UNIX_timestamp){
+          if(UNIX_timestamp=='' || UNIX_timestamp===null || UNIX_timestamp===undefined) { return '';}
+          var a = new Date(UNIX_timestamp*1000);
+          var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          var year = a.getFullYear();
+          var month = months[a.getMonth()];
+          var date = a.getDate();
+          var hour = a.getHours();
+          var min = a.getMinutes();
+          var sec = a.getSeconds();
+          var time = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+          return time;
+        };
+
         $scope.addtag = function(newtag) {
             if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
             $scope.container.meta.tags.push(newtag);

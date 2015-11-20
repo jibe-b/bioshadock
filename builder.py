@@ -9,6 +9,7 @@ import logging.config
 
 import json
 import datetime
+import time
 from pymongo import MongoClient
 from bson import json_util
 from bson.json_util import loads
@@ -56,6 +57,8 @@ class BioshadockDaemon(Daemon):
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           dockerfile = None
           if build is not None:
+              dt = datetime.datetime.now()
+              timestamp = time.mktime(dt.timetuple()) 
               build = loads(build)
               logging.debug(str(build))
               dockerfile = build['dockerfile']
@@ -102,6 +105,7 @@ class BioshadockDaemon(Daemon):
 
               else:
                   build['status'] = False
+              build['timestamp'] = timestamp
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
                                                        {'$push': {'builds': build},
                                                        '$set':{'meta.Dockerfile': dockerfile}})

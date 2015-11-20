@@ -115,8 +115,8 @@
             <div class="col-sm-6">
                 <div><h3>Dockerfile builds</h3></div>
                 <div ng-repeat="build in container.builds">
-                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
-                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
+                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}}</div>
+                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}}</div>
                 </div>
             </div>
             <div class="col-sm-6">
