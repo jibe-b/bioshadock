@@ -11,6 +11,10 @@ Other:
 
 mongodb, redis, elasticsearch
 
+## HTTPS
+
+server MUST run behind an HTTPS proxy server. Server should also add the header X-FORWARDED-PROTO and set to it to *https*, both to web interface and registry
+
 ## References
 
 Docker registry API

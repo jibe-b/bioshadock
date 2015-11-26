@@ -170,7 +170,7 @@ def user_bind(request):
         user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
         uid = user['user']['id']
         user = request.registry.db_mongo['users'].find_one({'id': uid})
-        if user is not None and user['type'] == 'ldap':
+        if user is not None and 'type' in user and user['type'] == 'ldap':
             return HTTPUnauthorized('Trying to connect with the id of an existing user')
         if user is None:
             role = 'visitor'
@@ -1099,6 +1099,8 @@ def api_users(request):
 
 @view_config(route_name='home', renderer='json')
 def my_view(request):
+    if request.scheme == "http":
+        return HTTPFound("https://" + request.host + "/" + request.static_path('shadock:webapp/dist/'))
     return HTTPFound(request.static_path('shadock:webapp/dist/'))
 
 @view_config(
@@ -1122,4 +1124,4 @@ def login_complete_view(request):
     token = jwt.encode({'user': result,
                         'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=36000),
                         'aud': 'urn:bioshadock/auth'}, secret)
-    return HTTPFound(request.static_url('shadock:webapp/app/')+"index.html#login?token="+token)
+    return HTTPFound(request.static_url('shadock:webapp/dist/')+"index.html#login?token="+token)
