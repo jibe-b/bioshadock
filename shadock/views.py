@@ -934,7 +934,7 @@ def user_can_push(username, repository, request):
             return False
         else:
             # Contributors can push only is specified
-            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != 1:
+            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != "1":
                 return False
             # Visitors cannot push
             if user_db['role'] == 'visitor':
