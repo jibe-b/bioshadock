@@ -69,10 +69,30 @@ class BioshadockDaemon(Daemon):
                   # TODO clone repo in a dir, chdir to repo and optionally write
                   # dockerfile
                   git_repo_dir = tempfile.mkdtemp(suffix='.git')
-                  Repo.clone_from(gitrepo, git_repo_dir)
-                  logging.debug(str(git_repo_dir))
-                  os.chdir(git_repo_dir)
-                  if dockerfile:
+                  git_info = gitrepo.split('#')
+                  gitrepo = git_info[0]
+                  selectedbranch = 'master'
+                  subdir = None
+                  if len(git_info) > 1:
+                      branch_path = git_info[1].split(':')
+                      if branch_path[0]:
+                          selectedbranch = branch_path[0]
+                      if len(branch_path) > 1 and branch_path[1]:
+                          subdir = branch_path[1]
+                  logging.info(str(gitrepo))
+                  logging.info("Using branch "+selectedbranch)
+                  logging.info("Directory: "+str(subdir))
+                  try:
+                      Repo.clone_from(gitrepo, git_repo_dir, branch=selectedbranch)
+                      if subdir is not None:
+                          git_repo_dir = os.path.join(git_repo_dir, subdir)
+                      logging.debug(str(git_repo_dir))
+                      os.chdir(git_repo_dir)
+                  except Exception as e:
+                      logging.error(str(e))
+                      continue
+                  #if dockerfile:
+                  if not os.path.exists("Dockerfile"):
                       logging.debug("Overwrite Dockerfile")
                       f = open('Dockerfile', 'w')
                       f.write(dockerfile.encode('utf-8'))

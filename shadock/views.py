@@ -299,7 +299,7 @@ def container_elixir(request):
     if user is None:
         try:
             apikey = request.params['apikey']
-            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
             if user is None:
                 return HTTPForbidden()
         except Exception:
@@ -346,7 +346,7 @@ def container_tag(request):
     if user is None:
         try:
             apikey = request.params['apikey']
-            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
             if user is None:
                 return HTTPForbidden()
         except Exception:
@@ -392,12 +392,11 @@ def container_git(request):
     if user is None:
         try:
             apikey = request.params['apikey']
-            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
             if user is None:
                 return HTTPForbidden()
         except Exception:
             return HTTPForbidden()
-
     repo_id = '/'.join(request.matchdict['id'])
 
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -511,6 +510,8 @@ def container_update(request):
         'meta.description': form['meta']['description'],
         'meta.tags': form['meta']['tags'],
         'meta.terms': form['meta']['terms'],
+        'meta.git': form['meta']['git'],
+        'meta.elixir': form['meta']['elixir'],
         'visible': form['visible']
     }
     repo['acl_push']['members'] = form['acl_push']['members']

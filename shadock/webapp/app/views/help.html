@@ -9,6 +9,11 @@
 <h2>Building a container</h2>
 <div>When you update a Dockerfile, a build is automatically requested and launched as a background tasks. Result of the build will appear in the <i>Build</i> tab.</div>
 <div>If you provided only a Dockerfile, file must be self-sufficient for the build.</div>
-<div>If you provided a git repository and it contains a Dockerfile, the build process will use this file, else you must also provide a Dockerfile in addition to the repository.</div>
-<div>The Dockerfile in git repository can be overriden with an other Dockerfile.</div>
+<div>For git repositories, you can specify branch and subdirectory where is Docker file with the following syntax: https://github.com/xxx/yyyy.git#your_branch_name:sub_path, examples:</div>
+<ul>
+<li>Dockerfile at root: https://github.com/osallou/dockertest.git</li>
+<li>Dockerfile in sub directory test2: https://github.com/osallou/dockertest.git#:test2</li>
+<li>Dockerfile in branch test and subdir test2: https://github.com/osallou/dockertest.git#test:test2</li>
+
+</ul>
 </div>
