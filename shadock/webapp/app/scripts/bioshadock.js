@@ -297,11 +297,14 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         $scope.elixir_versions = [];
         $scope.get_elixir_meta = function() {
+            if($scope.container.meta.elixir == undefined || $scope.container.meta.elixir=='') {
+                return;
+            }
             //$http.get('https://bio.tools/api/tool/BioCatalogue/phmmer').success(function(data){
             $http.get('/container/metaelixir/'+$scope.container.meta.elixir).success(function(data){
                var versions = [];
                for(var i=0;i<data.length;i++) {
-                   versions.push({'url': 'https://bio.tools/api/tool/'+data[i].version, 'version': data[i].version});
+                   versions.push({'url': 'https://bio.tools/tool/'+$scope.container.meta.elixir+'/'+data[i].version, 'version': data[i].version});
                }
                $scope.elixir_versions = versions;
             });
