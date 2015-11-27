@@ -286,6 +286,17 @@ def container_manifest(request):
     res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
     return res
 
+@view_config(route_name='container_metaelixir', renderer='json')
+def container_metaelixir(request):
+    repo_id = '/'.join(request.matchdict['id'])
+
+    http = urllib3.PoolManager()
+    r = http.request('GET', request.registry.settings['biotools_url']+'/api/tool/'+repo_id)
+    if r.status != 200:
+        return Response('could not get the metadata', status_code = r.status)
+    return json.loads(r.data)
+
+
 @view_config(route_name='container_elixir', renderer='json')
 def container_elixir(request):
     '''

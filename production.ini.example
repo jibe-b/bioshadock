@@ -23,6 +23,8 @@ service=docker-registry.genouest.org
 issuer=docker-ui.genouest.org
 
 elixir_script=
+elixir_affiliation=
+biotools_url=https://bio.tools
 
 # For tcp connection to docker
 docker_connect=

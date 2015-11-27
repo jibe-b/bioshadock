@@ -87,6 +87,7 @@ def main(global_config, **settings):
     config.add_route('container_git', '/container/git/*id')
     config.add_route('container_tag', '/container/tag/*id')
     config.add_route('container_elixir', '/container/elixir/*id')
+    config.add_route('container_metaelixir', '/container/metaelixir/*id')
     config.add_route('container', '/container/*id')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')
