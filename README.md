@@ -1,4 +1,4 @@
-#shadock README
+#Bioshadock README
 
 ## Requirements
 
@@ -98,6 +98,8 @@ get container tags: /container/tags/*id
 build container from a git repo: /container/git/*id?apikey=XX
 tag a container: /container/tag/*id/tagvalue?apikey=XX
 
+swagger definition in shadock/webapp/app/api/bioshadock.json
+online: http://www.genouest.org/api/bioshadock-api/
 
 # Credits
 
