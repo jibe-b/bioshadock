@@ -87,7 +87,7 @@ class BioshadockDaemon(Daemon):
               build_tag = ''
               if 'tag' in build and build['tag']:
                   build_tag = ':'+build['tag']
-
+              logging.info('Build: '+str(build['id']))
               response = [line for line in BioshadockDaemon.cli.build(
                   fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
               build['response'] = response

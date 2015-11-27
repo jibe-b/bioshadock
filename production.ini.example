@@ -22,6 +22,8 @@ secret_passphrase=xxxxyyyzzzzz
 service=docker-registry.genouest.org
 issuer=docker-ui.genouest.org
 
+elixir_script=
+
 # For tcp connection to docker
 docker_connect=
 

@@ -13,6 +13,9 @@ import copy
 import logging
 import string
 import random
+import tempfile
+import os
+import subprocess
 
 from bson import json_util
 from bson.json_util import dumps
@@ -282,6 +285,53 @@ def container_manifest(request):
     res = json.loads(r.data)
     res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
     return res
+
+@view_config(route_name='container_elixir', renderer='json')
+def container_elixir(request):
+    '''
+    Update elixir from a container Dockerfile
+
+    /container/elixir/x/y/z
+    '''
+    if not request.registry.settings['elixir_script']:
+        return HTTPForbidden('Not configured for Elixir updates')
+    user = is_logged(request)
+    if user is None:
+        try:
+            apikey = request.params['apikey']
+            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            if user is None:
+                return HTTPForbidden()
+        except Exception:
+            return HTTPForbidden()
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    dockerFile = repo['meta']['Dockerfile']
+    if dockerFile is None or not dockerFile:
+        return HTTPNotFound('No Dockerfile available')
+    (tmpfh, tmpfilepath) = tempfile.mkstemp(prefix='elixir')
+    tmpfile = open(tmpfilepath, 'w')
+    tmpfile.write(dockerFile)
+    tmpfile.close()
+
+    softname = repo_id.split('/')[-1]
+    try:
+        subprocess.call([request.registry.settings['elixir_script'], tmpfilepath, softname]) 
+    except Exception as e:
+        logging.error("Elixir call error: "+str(e))
+        return {'msg': 'An error occured'}
+    os.remove(tmpfilepath)
+    affiliation = request.registry.settings['elixir_affiliation']
+    elixir_name = affiliation+'/'+softname
+    request.registry.db_mongo['repository'].update({'_id': repo['_id']},{'$set': {'meta.elixir': elixir_name}})
+    return {'msg': 'Request executed', 'elixir': elixir_name}
 
 
 @view_config(route_name='container_tag', renderer='json')
@@ -934,7 +984,7 @@ def user_can_push(username, repository, request):
             return False
         else:
             # Contributors can push only is specified
-            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != 1:
+            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != "1":
                 return False
             # Visitors cannot push
             if user_db['role'] == 'visitor':

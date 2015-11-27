@@ -49,6 +49,12 @@ ldap.host =
 ldap.port = 389
 ldap.dn = 
 
+# User for builder push
+push_auth_user =
+push_auth_password =
+push_auth_email =
+
+
 [server:main]
 use = egg:waitress#main
 host = 0.0.0.0

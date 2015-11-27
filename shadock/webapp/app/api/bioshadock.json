@@ -34,15 +34,7 @@
                         "description": "token",
                         "schema": {
                             "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Token"
-                            }
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
+                            "$ref": "#/definitions/Token"
                         }
                     }
                 }
@@ -74,12 +66,6 @@
                                 "$ref": "#/definitions/Container"
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -100,12 +86,6 @@
                                 "$ref": "#/definitions/Container"
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -125,12 +105,6 @@
                             "items": {
                                 "$ref": "#/definitions/Container"
                             }
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
                         }
                     }
                 }
@@ -160,12 +134,6 @@
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/Container"
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
                         }
                     }
                 }
@@ -197,12 +165,6 @@
                                 "$ref": "#/definitions/Container"
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -231,11 +193,34 @@
                             "type": "Object",
                             "$ref": "#/definitions/Manifest"
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
+                    }
+                }
+            }
+        },
+        "/container/elixir/{id}": {
+            "post": {
+                "summary": "Register container in bio.tools",
+                "description": "Register container in bio.tools using its Dockerfile metadata\n",
+                "tags": [
+                    "Container",
+                    "bio.tools"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container identifier",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Manifest",
                         "schema": {
-                            "$ref": "#/definitions/Error"
+                            "type": "Object",
+                            "$ref": "#/definitions/Elixir"
                         }
                     }
                 }
@@ -265,12 +250,6 @@
                         "schema": {
                             "type": "array",
                             "$ref": "#/definitions/Tags"
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
                         }
                     }
                 }
@@ -305,12 +284,6 @@
                 "responses": {
                     "200": {
                         "description": "nothing"
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -344,12 +317,6 @@
                 "responses": {
                     "200": {
                         "description": "nothing"
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -397,12 +364,6 @@
                                 "$ref": "#/definitions/ContainerTag"
                             }
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             }
@@ -430,12 +391,6 @@
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/Container"
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
                         }
                     }
                 }
@@ -471,12 +426,6 @@
                             "type": "object",
                             "$ref": "#/definitions/Container"
                         }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
-                        }
                     }
                 }
             },
@@ -501,12 +450,6 @@
                         "schema": {
                             "type": "object",
                             "$ref": "#/definitions/Container"
-                        }
-                    },
-                    "default": {
-                        "description": "Unexpected error",
-                        "schema": {
-                            "$ref": "#/definitions/Error"
                         }
                     }
                 }
@@ -589,6 +532,19 @@
                 }
             }
         },
+        "Elixir": {
+            "type": "object",
+            "properties": {
+                "-msg": {
+                    "type": "string",
+                    "description": "result message"
+                },
+                "-elixir": {
+                    "type": "string",
+                    "description": "bio.tools identifier"
+                }
+            }
+        },
         "DockerBuild": {
             "type": "object",
             "properties": {
@@ -667,21 +623,6 @@
         },
         "Manifest": {
             "type": "object"
-        },
-        "Error": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "fields": {
-                    "type": "string"
-                }
-            }
         }
     }
 }

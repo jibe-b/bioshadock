@@ -1,3 +1,4 @@
+<div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
   <tabset justified="true">
     <tab heading="Info" active="true">
         <div class="row">
@@ -5,7 +6,9 @@
             <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
         </div>
         <div class="alert alert-info" role="alert">
-          <p>docker pull {{service}}/{{container.id}}[:tag]</p>
+          <p>docker pull {{service}}/{{container.id}}[:tag]
+          <button ng-if="user.role=='admin'" class="pull-right btn btn-warning" ng-click="elixir()">Push to Elixir registry</button>
+        </p>
         </div>
         <div class="row">
             <div class="col-sm-6">
@@ -39,7 +42,7 @@
                     </div>
                 </div>
 
-                <div class="panel panel-info" ng-if="container.user_can_push">
+                <div class="panel panel-info">
                     <div class="panel-heading">Metadata tags</div>
                     <div class="panel-body">
                         <form ng-if="container.user_can_push" class="form-inline">
@@ -61,6 +64,14 @@
                 </div>
             </div>
             <div class="col-sm-6">
+                <div class="panel panel-info">
+                    <div class="panel-heading">bio.tools</div>
+                    <div class="panel-body">
+                        <div ng-repeat="version in elixir_versions">
+                            <a ng-href="version.url"><i class="glyphicon glyphicon-new-window"></i> {{version.version}}</a>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="panel panel-info">
                     <div class="panel-heading">Docker tags</div>
