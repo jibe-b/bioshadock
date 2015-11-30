@@ -54,7 +54,6 @@ bzr==2.7.0dev1
 celery==3.0.19
 celery-with-mongodb==3.0
 chardet==2.0.1
--e git://git.openstack.org/openstack/cinder.git@b75d26f9f3a15f00e2a9605e23752b30cab583e6#egg=cinder-origin/master
 cliff==1.6.1.2.g4bdf5fc
 cmd2==0.6.7
 command-not-found==0.3
