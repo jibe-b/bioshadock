@@ -35,7 +35,11 @@ be used in |\nAuthorization header bearer for authenticated requests\n",
                         "description": "token",
                         "schema": {
                             "type": "object",
+<<<<<<< HEAD
                              "$ref": "#/definitions/Token"
+=======
+                            "$ref": "#/definitions/Token"
+>>>>>>> develop
                         }
                     }
                 }
@@ -198,6 +202,38 @@ not) by name\n",
                             "type": "Object",
                             "$ref": "#/definitions/Manifest"
                         }
+<<<<<<< HEAD
+=======
+                    }
+                }
+            }
+        },
+        "/container/elixir/{id}": {
+            "post": {
+                "summary": "Register container in bio.tools",
+                "description": "Register container in bio.tools using its Dockerfile metadata\n",
+                "tags": [
+                    "Container",
+                    "bio.tools"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "container identifier",
+                        "required": true,
+                        "type": "string",
+                        "format": "string"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Manifest",
+                        "schema": {
+                            "type": "Object",
+                            "$ref": "#/definitions/Elixir"
+                        }
+>>>>>>> develop
                     }
                 }
             }
@@ -511,6 +547,19 @@ are not deleted from registry\n",
                 }
             }
         },
+        "Elixir": {
+            "type": "object",
+            "properties": {
+                "-msg": {
+                    "type": "string",
+                    "description": "result message"
+                },
+                "-elixir": {
+                    "type": "string",
+                    "description": "bio.tools identifier"
+                }
+            }
+        },
         "DockerBuild": {
             "type": "object",
             "properties": {
@@ -589,21 +638,6 @@ are not deleted from registry\n",
         },
         "Manifest": {
             "type": "object"
-        },
-        "Error": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "format": "int32"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "fields": {
-                    "type": "string"
-                }
-            }
         }
     }
 }

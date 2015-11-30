@@ -13,6 +13,9 @@ import copy
 import logging
 import string
 import random
+import tempfile
+import os
+import subprocess
 
 from bson import json_util
 from bson.json_util import dumps
@@ -283,6 +286,64 @@ def container_manifest(request):
     res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
     return res
 
+@view_config(route_name='container_metaelixir', renderer='json')
+def container_metaelixir(request):
+    repo_id = '/'.join(request.matchdict['id'])
+
+    http = urllib3.PoolManager()
+    r = http.request('GET', request.registry.settings['biotools_url']+'/api/tool/'+repo_id)
+    if r.status != 200:
+        return Response('could not get the metadata', status_code = r.status)
+    return json.loads(r.data)
+
+
+@view_config(route_name='container_elixir', renderer='json')
+def container_elixir(request):
+    '''
+    Update elixir from a container Dockerfile
+
+    /container/elixir/x/y/z
+    '''
+    if not request.registry.settings['elixir_script']:
+        return HTTPForbidden('Not configured for Elixir updates')
+    user = is_logged(request)
+    if user is None:
+        try:
+            apikey = request.params['apikey']
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
+            if user is None:
+                return HTTPForbidden()
+        except Exception:
+            return HTTPForbidden()
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    dockerFile = repo['meta']['Dockerfile']
+    if dockerFile is None or not dockerFile:
+        return HTTPNotFound('No Dockerfile available')
+    (tmpfh, tmpfilepath) = tempfile.mkstemp(prefix='elixir')
+    tmpfile = open(tmpfilepath, 'w')
+    tmpfile.write(dockerFile)
+    tmpfile.close()
+
+    softname = repo_id.split('/')[-1]
+    try:
+        subprocess.call([request.registry.settings['elixir_script'], tmpfilepath, softname]) 
+    except Exception as e:
+        logging.error("Elixir call error: "+str(e))
+        return {'msg': 'An error occured'}
+    os.remove(tmpfilepath)
+    affiliation = request.registry.settings['elixir_affiliation']
+    elixir_name = affiliation+'/'+softname
+    request.registry.db_mongo['repository'].update({'_id': repo['_id']},{'$set': {'meta.elixir': elixir_name}})
+    return {'msg': 'Request executed', 'elixir': elixir_name}
+
 
 @view_config(route_name='container_tag', renderer='json')
 def container_tag(request):
@@ -296,7 +357,7 @@ def container_tag(request):
     if user is None:
         try:
             apikey = request.params['apikey']
-            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
             if user is None:
                 return HTTPForbidden()
         except Exception:
@@ -342,12 +403,11 @@ def container_git(request):
     if user is None:
         try:
             apikey = request.params['apikey']
-            user = request.registry.db_mongo['user'].find_one({'apikey': apikey})
+            user = request.registry.db_mongo['users'].find_one({'apikey': apikey})
             if user is None:
                 return HTTPForbidden()
         except Exception:
             return HTTPForbidden()
-
     repo_id = '/'.join(request.matchdict['id'])
 
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
@@ -461,6 +521,8 @@ def container_update(request):
         'meta.description': form['meta']['description'],
         'meta.tags': form['meta']['tags'],
         'meta.terms': form['meta']['terms'],
+        'meta.git': form['meta']['git'],
+        'meta.elixir': form['meta']['elixir'],
         'visible': form['visible']
     }
     repo['acl_push']['members'] = form['acl_push']['members']

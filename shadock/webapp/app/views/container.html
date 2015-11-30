@@ -1,11 +1,16 @@
+<div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
   <tabset justified="true">
     <tab heading="Info" active="true">
         <div class="row">
-            <h2>{{container.id}} <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger" ng-click="delete_container()">Delete</button></span></h2>
+            <h2>{{container.id}} 
+                 <span><button type="button" ng-if="show_save && container.user_can_push" class="btn btn-primary" ng-click="update_container(container)">Update container info</button></span>
+                <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger" ng-click="delete_container()">Delete</button></span></h2>
             <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
         </div>
         <div class="alert alert-info" role="alert">
-          <p>docker pull {{service}}/{{container.id}}[:tag]</p>
+          <p>docker pull {{service}}/{{container.id}}[:tag]
+          <button ng-if="user.role=='admin'" class="pull-right btn btn-warning" ng-click="elixir()">Push to Elixir registry</button>
+        </p>
         </div>
         <div class="row">
             <div class="col-sm-6">
@@ -39,7 +44,7 @@
                     </div>
                 </div>
 
-                <div class="panel panel-info" ng-if="container.user_can_push">
+                <div class="panel panel-info">
                     <div class="panel-heading">Metadata tags</div>
                     <div class="panel-body">
                         <form ng-if="container.user_can_push" class="form-inline">
@@ -61,6 +66,20 @@
                 </div>
             </div>
             <div class="col-sm-6">
+                <div class="panel panel-info">
+                    <div class="panel-heading">bio.tools</div>
+                    <div class="panel-body">
+                        <form class="form-inline">
+                            <div class="form-group">
+                                <label for="elixir">Identifier</label>
+                                <input type="text" ng-change="proposesave()" ng-disabled="! container.user_can_push" class="form-control" ng-model="container.meta.elixir" id="elixir" placeholder="affiliation/name"/>
+                            </div>
+                        </form>
+                        <div ng-repeat="version in elixir_versions">
+                            <a target="_blank" ng-href="{{version.url}}"><i class="glyphicon glyphicon-new-window"></i> {{version.version}}</a>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="panel panel-info">
                     <div class="panel-heading">Docker tags</div>

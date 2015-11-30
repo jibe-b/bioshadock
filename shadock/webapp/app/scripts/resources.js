@@ -82,6 +82,12 @@
                 method: 'POST',
                 isArray: false,
                 cache: false
+            },
+            elixir: {
+                url: '/container/elixir/:id',
+                method: 'POST',
+                isArray: false,
+                cache: false
             }
         });
 

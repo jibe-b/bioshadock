@@ -10,6 +10,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/welcome.html',
     controller: 'welcomeCtrl'
   })
+  .when('/help', {
+    templateUrl: 'views/help.html',
+    controller: 'helpCtrl'
+  })
   .when('/search', {
     templateUrl: 'views/search.html',
     controller: 'searchCtrl'
@@ -88,6 +92,8 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.service = config['service'];
         $scope.issuer = config['issuer'];
     });
+})
+.controller('helpCtrl',function ($scope) {
 })
 .controller('usersCtrl',
     function ($scope, $route, User) {
@@ -175,6 +181,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('containerCtrl',
     function ($scope, $route, $routeParams, $document, $http, $location, Container, Config, Auth) {
         $scope.container_id = $routeParams.path;
+        $scope.msg = '';
         $scope.tag = 'latest'
         var user = Auth.getUser();
         $scope.user = user;
@@ -266,11 +273,12 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                     $location.path('/');
                 });
 
-        }
+        };
 
         $scope.proposesave = function(){
             $scope.show_save = true;
-        }
+        };
+
         $scope.update_container = function(container){
             var req = {
              method: 'POST',
@@ -285,7 +293,35 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                  $scope.msg = "Container updated";
                  $scope.show_save = false;
              });
-        }
+        };
+
+        $scope.elixir_versions = [];
+        $scope.get_elixir_meta = function() {
+            if($scope.container.meta.elixir == undefined || $scope.container.meta.elixir=='') {
+                return;
+            }
+            //$http.get('https://bio.tools/api/tool/BioCatalogue/phmmer').success(function(data){
+            $http.get('/container/metaelixir/'+$scope.container.meta.elixir).success(function(data){
+               var versions = [];
+               for(var i=0;i<data.length;i++) {
+                   versions.push({'url': 'https://bio.tools/tool/'+$scope.container.meta.elixir+'/'+data[i].version, 'version': data[i].version});
+               }
+               $scope.elixir_versions = versions;
+            });
+
+
+        };
+
+        $scope.elixir = function(){
+            $http.get('/container/elixir/'+$scope.container_id).success(function(data){
+               $scope.msg = data.msg;
+               if(data.elixir !== undefined) {
+                 $scope.container.meta.elixir = data.elixir;
+                 $scope.get_elixir_meta();
+               }
+            }).error(function(data){ $scope.msg = 'An error occured'; });
+        };
+
         $scope.get_container = function(){
             //Container.get({'id': $scope.container_id}).$promise.then(function(data){
             $http.get('/container/'+$scope.container_id).success(function(data){
@@ -303,6 +339,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                      'scope': 'repository:'+$scope.container_id+':manifest'
                  }
                 };
+                if($scope.container.meta.elixir !== undefined && $scope.container.meta.elixir!=null && $scope.container.meta.elixir!='') {
+                    $scope.get_elixir_meta();
+                }
 
                 $http(req).success(function(data, status, headers, config) {
                     var manifestreq = {

@@ -1,0 +1,19 @@
+<div class="row">
+<h1>Help page</h1>
+<h2>Support</h2>
+<div>If you have questions, issues or requests, please contact the <a href="mailto:support@genouest.org">support team</a></div>
+<h2>Pushing a container</h2>
+<div>To push a container in the registry, you must have some specific rights. If you are authenticated via ldap, you are authorized to do so. People authenticating with Google, GitHub, etc. must ask to the support team to get those rights.</div>
+<h2>Create a new container</h2>
+<div>To create a container, you must provide a Dockerfile and/or a git repository. The git repository can contain a Dockerfile.</div>
+<h2>Building a container</h2>
+<div>When you update a Dockerfile, a build is automatically requested and launched as a background tasks. Result of the build will appear in the <i>Build</i> tab.</div>
+<div>If you provided only a Dockerfile, file must be self-sufficient for the build.</div>
+<div>For git repositories, you can specify branch and subdirectory where is Docker file with the following syntax: https://github.com/xxx/yyyy.git#your_branch_name:sub_path, examples:</div>
+<ul>
+<li>Dockerfile at root: https://github.com/osallou/dockertest.git</li>
+<li>Dockerfile in sub directory test2: https://github.com/osallou/dockertest.git#:test2</li>
+<li>Dockerfile in branch test and subdir test2: https://github.com/osallou/dockertest.git#test:test2</li>
+
+</ul>
+</div>
