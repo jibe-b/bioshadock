@@ -515,6 +515,11 @@ def container_update(request):
     if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
         return HTTPForbidden()
     form = json.loads(request.body, encoding=request.charset)
+    if 'git' not in form['meta']:
+        form['meta']['git'] = None
+    if 'elixir' not in form['meta']:
+        form['meta']['elixir'] = None
+
     updates = {
         'acl_push.members': form['acl_push']['members'],
         'acl_pull.members': form['acl_pull']['members'],
