@@ -17,7 +17,8 @@
         "/user/bind": {
             "post": {
                 "summary": "login binding to get an authorization bearer",
-                "description": "Validate authentication and returns a token to be used in |\nAuthorization header bearer for authenticated requests\n",
+                "description": "Validate authentication and returns a token to
+be used in |\nAuthorization header bearer for authenticated requests\n",
                 "parameters": [
                     {
                         "name": "binding",
@@ -34,7 +35,11 @@
                         "description": "token",
                         "schema": {
                             "type": "object",
+<<<<<<< HEAD
+                             "$ref": "#/definitions/Token"
+=======
                             "$ref": "#/definitions/Token"
+>>>>>>> develop
                         }
                     }
                 }
@@ -43,7 +48,8 @@
         "/search": {
             "get": {
                 "summary": "Query for containers",
-                "description": "Search within public containers with LUCENE syntax.\n",
+                "description": "Search within public containers with LUCENE
+syntax.\n",
                 "parameters": [
                     {
                         "name": "q",
@@ -73,7 +79,8 @@
         "/container": {
             "get": {
                 "summary": "get user containers (need to be logged)",
-                "description": "Get containers owner by user are able to push in\n",
+                "description": "Get containers owner by user are able to push
+in\n",
                 "tags": [
                     "Container"
                 ],
@@ -142,7 +149,8 @@
         "/container/search": {
             "post": {
                 "summary": "Search containers by name",
-                "description": "Search containers visible by user (logged or not) by name\n",
+                "description": "Search containers visible by user (logged or
+not) by name\n",
                 "parameters": [
                     {
                         "name": "search",
@@ -172,7 +180,8 @@
         "/container/manifest/{id}": {
             "get": {
                 "summary": "Get container manifest from registry",
-                "description": "Get container maniest (layers, signatures, ...)\n",
+                "description": "Get container maniest (layers, signatures,
+...)\n",
                 "tags": [
                     "Container"
                 ],
@@ -193,6 +202,8 @@
                             "type": "Object",
                             "$ref": "#/definitions/Manifest"
                         }
+<<<<<<< HEAD
+=======
                     }
                 }
             }
@@ -222,6 +233,7 @@
                             "type": "Object",
                             "$ref": "#/definitions/Elixir"
                         }
+>>>>>>> develop
                     }
                 }
             }
@@ -258,7 +270,8 @@
         "/container/dockerfile/{id}": {
             "post": {
                 "summary": "Update Dockerfile and build container",
-                "description": "UpdateDockerfile or git repo and build the container\n",
+                "description": "UpdateDockerfile or git repo and build the
+container\n",
                 "parameters": [
                     {
                         "name": "id",
@@ -291,7 +304,8 @@
         "/container/git/{id}": {
             "post": {
                 "summary": "Build container from git repo",
-                "description": "Trigger to build the container from a git repo\n",
+                "description": "Trigger to build the container from a git
+repo\n",
                 "parameters": [
                     {
                         "name": "id",
@@ -371,7 +385,8 @@
         "/container/{id}": {
             "delete": {
                 "summary": "Remove a container",
-                "description": "Deletes the container from Bioshadock, layers are not deleted from registry\n",
+                "description": "Deletes the container from Bioshadock, layers
+are not deleted from registry\n",
                 "parameters": [
                     {
                         "name": "id",
