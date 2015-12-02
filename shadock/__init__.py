@@ -89,6 +89,8 @@ def main(global_config, **settings):
     config.add_route('container_elixir', '/container/elixir/*id')
     config.add_route('container_metaelixir', '/container/metaelixir/*id')
     config.add_route('container', '/container/*id')
+    config.add_route('builds', '/builds/*id')
+    config.add_route('builds', '/build/{id}')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')
     config.add_route('api_library_auth', '/v1/repositories/{image}/auth')
@@ -117,4 +119,3 @@ def main(global_config, **settings):
 
 def before_render(event):
     event["username"] = event['request'].authenticated_userid
-

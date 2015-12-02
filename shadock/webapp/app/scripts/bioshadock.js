@@ -326,6 +326,12 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             //Container.get({'id': $scope.container_id}).$promise.then(function(data){
             $http.get('/container/'+$scope.container_id).success(function(data){
                 $scope.container = data;
+                // Get builds (without response to limit size)
+                $http.get('/builds/'+$scope.container_id).success(function(builds){
+                    $scope.builds = builds;
+                });
+
+
                 if(user == null) { user = {'id': 'anonymous'}}
                 var req = {
                  method: 'POST',
@@ -384,11 +390,14 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         });
 
         $scope.show_log = function(build){
-            var dockerlog = '';
-            for(var i = 0;i < build.response.length;i++) {
-                dockerlog += '<div>'+build.response[i]+'</div>';
-            }
-                $scope.dockerlog = dockerlog;
+            // Get full build
+            $http.get('/build/'+build['_id']['$oid']).success(function(completebuild){
+                var dockerlog = '';
+                for(var i = 0;i < completebuild.response.length;i++) {
+                    dockerlog += '<div>'+completebuild.response[i]+'</div>';
+                }
+                    $scope.dockerlog = dockerlog;
+            });
         };
 
         $scope.go_to_dockerfile = function(){
@@ -551,7 +560,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('loginCtrl',
     function ($scope, $rootScope, $route, $routeParams, $location, $window, Auth, User) {
         $scope.token = "";
-        
+
         $scope.uid = "";
         $scope.password = "";
         $scope.authenticate = function() {

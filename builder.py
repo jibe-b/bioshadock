@@ -57,8 +57,9 @@ class BioshadockDaemon(Daemon):
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           dockerfile = None
           if build is not None:
+              BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'building'}})
               dt = datetime.datetime.now()
-              timestamp = time.mktime(dt.timetuple()) 
+              timestamp = time.mktime(dt.timetuple())
               build = loads(build)
               logging.debug(str(build))
               dockerfile = build['dockerfile']
@@ -90,6 +91,7 @@ class BioshadockDaemon(Daemon):
                       os.chdir(git_repo_dir)
                   except Exception as e:
                       logging.error(str(e))
+                      BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'failed'}})
                       continue
                   #if dockerfile:
                   if not os.path.exists("Dockerfile"):
@@ -126,9 +128,10 @@ class BioshadockDaemon(Daemon):
               else:
                   build['status'] = False
               build['timestamp'] = timestamp
+              build['progress'] = 'over'
+              BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},build)
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
-                                                       {'$push': {'builds': build},
-                                                       '$set':{'meta.Dockerfile': dockerfile}})
+                                                       {'$set':{'meta.Dockerfile': dockerfile}})
               if do_git:
                   cur_dir = os.path.dirname(os.path.realpath(__file__))
                   os.chdir(cur_dir)

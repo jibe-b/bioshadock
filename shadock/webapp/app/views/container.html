@@ -2,7 +2,7 @@
   <tabset justified="true">
     <tab heading="Info" active="true">
         <div class="row">
-            <h2>{{container.id}} 
+            <h2>{{container.id}}
                  <span><button type="button" ng-if="show_save && container.user_can_push" class="btn btn-primary" ng-click="update_container(container)">Update container info</button></span>
                 <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger" ng-click="delete_container()">Delete</button></span></h2>
             <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
@@ -59,7 +59,7 @@
                         </div>
                     </div>
                 </div>
- 
+
 
                 <div class="row">
                     <button type="button" ng-if="show_save && container.user_can_push" class="btn btn-primary" ng-click="update_container(container)">Update container info</button>
@@ -133,9 +133,9 @@
         <div class="row">
             <div class="col-sm-6">
                 <div><h3>Dockerfile builds</h3></div>
-                <div ng-repeat="build in container.builds | orderBy:'-timestamp'">
-                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}}</div>
-                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}}</div>
+                <div ng-repeat="build in builds | orderBy:'-timestamp'">
+                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}} {{build.progress}}</div>
+                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}} {{convert_timestamp_to_date(build['timestamp'])}} {{build.progress}}</div>
                 </div>
             </div>
             <div class="col-sm-6">

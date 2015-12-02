@@ -249,6 +249,54 @@ def containers_all(request):
         user_repos.append(repo)
     return user_repos
 
+@view_config(route_name='builds', renderer='json', request_method='GET')
+def builds(request):
+    '''
+    Get all builds for container, remove response log to limit size
+    '''
+    user = is_logged(request)
+    if user is None:
+        return HTTPForbidden()
+
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+
+    builds = request.registry.db_mongo['builds'].find({'id': repo_id}, {'response': 0})
+    res = []
+    for build in builds:
+        res.append(build)
+    return res
+
+@view_config(route_name='build', renderer='json', request_method='GET')
+def build(request):
+    '''
+    Get a build with complete response
+    '''
+    user = is_logged(request)
+    if user is None:
+        return HTTPForbidden()
+
+    build_id = request.matchdict['id']
+    build = request.registry.db_mongo['builds'].find_one({'_id': ObjectId(build_id)})
+    repo_id = build['repo']
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if user is None:
+        return HTTPForbidden()
+    if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+        return HTTPForbidden()
+
+    return build
+
+
 
 @view_config(route_name='containers', renderer='json', request_method='GET')
 def containers(request):
@@ -334,7 +382,7 @@ def container_elixir(request):
 
     softname = repo_id.split('/')[-1]
     try:
-        subprocess.call([request.registry.settings['elixir_script'], tmpfilepath, softname]) 
+        subprocess.call([request.registry.settings['elixir_script'], tmpfilepath, softname])
     except Exception as e:
         logging.error("Elixir call error: "+str(e))
         return {'msg': 'An error occured'}
@@ -381,8 +429,13 @@ def container_tag(request):
     container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if 'git' not in container['meta']:
         return HTTPForbidden()
+
+    build = request.registry.db_mongo['builds'].insert({'id': repo_id,
+                                                        'progress': 'waiting'})
+
     newbuild = {
         'id': repo_id,
+        'build': str(build),
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
@@ -426,8 +479,13 @@ def container_git(request):
     container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if 'git' not in container['meta']:
         return HTTPForbidden()
+
+    build = request.registry.db_mongo['builds'].insert({'id': repo_id,
+                                                        'progress': 'waiting'})
+
     newbuild = {
         'id': repo_id,
+        'build': str(build)
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
@@ -454,8 +512,13 @@ def container_dockerfile(request):
     if 'git' not in form:
         form['git'] = None
     request.registry.db_mongo['repository'].update({'id': repo_id},{'$set': {'meta.Dockerfile': dockerfile}})
+
+    build = request.registry.db_mongo['builds'].insert({'id': repo_id,
+                                                        'progress': 'waiting'})
+
     newbuild = {
         'id': repo_id,
+        'build': str(build),
         'date': datetime.datetime.now(),
         'dockerfile': dockerfile,
         'git': form['git'],
@@ -581,8 +644,12 @@ def containers_new(request):
                                   'meta.git': form['git'],
                                   'visible': form['visible'] in ['true', 1]}
                         })
+
+        build = request.registry.db_mongo['builds'].insert({'id': repo_id,
+                                                            'progress': 'waiting'})
         newbuild = {
             'id': repo_id,
+            'build': str(build),
             'date': datetime.datetime.now(),
             'dockerfile': form['dockerfile'],
             'git': form['git'],
