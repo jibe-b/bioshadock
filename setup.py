@@ -27,7 +27,8 @@ requires = [
     'ldap3',
     'gunicorn',
     'gevent',
-    'velruse'
+    'velruse',
+    'bioshadock_biotools'
     ]
 
 setup(name='shadock',

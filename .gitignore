@@ -11,3 +11,6 @@ shadock/*.pyc
 shadock.egg-info
 
 shadock/webapp/.tmp
+
+development.ini
+production.ini

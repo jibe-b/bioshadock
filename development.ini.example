@@ -36,6 +36,13 @@ docker_connect=
 
 admin=
 
+# Elixir/bio.tools integration
+elixir_login=
+elixir_password=
+elixir_affiliation=
+biotools_url=https://bio.tools
+
+
 # Set to 0 if base contributor cannot push to private workspace
 contributor_can_push=1
 

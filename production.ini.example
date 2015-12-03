@@ -22,7 +22,10 @@ secret_passphrase=xxxxyyyzzzzz
 service=docker-registry.genouest.org
 issuer=docker-ui.genouest.org
 
-elixir_script=
+
+# Elixir/bio.tools integration
+elixir_login=
+elixir_password=
 elixir_affiliation=
 biotools_url=https://bio.tools
 
