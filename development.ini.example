@@ -40,6 +40,9 @@ admin=
 elixir_login=
 elixir_password=
 elixir_affiliation=
+# template.xml used for conversion
+# https://github.com/fjrmoreews/bioshadock_client/blob/master/registry/template.xml
+elixir_template=
 biotools_url=https://bio.tools
 
 
@@ -52,9 +55,9 @@ public_key=/root/certs/wildcard.genouest.org.crt.simple
 cacert_der=/root/certs/wildcard.genouest.org.der
 
 use_ldap = 0
-ldap.host = 
+ldap.host =
 ldap.port = 389
-ldap.dn = 
+ldap.dn =
 
 # User for builder push
 push_auth_user =

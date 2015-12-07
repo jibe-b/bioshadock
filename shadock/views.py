@@ -35,6 +35,11 @@ import pymongo
 
 from ldap3 import Server, Connection, AUTH_SIMPLE, STRATEGY_SYNC, STRATEGY_ASYNC_THREADED, SEARCH_SCOPE_WHOLE_SUBTREE, GET_ALL_INFO
 
+
+from bioshadock_biotools.parser import Parser
+from bioshadock_biotools.biotools import BioTools
+
+
 #request.registry.settings['admin']
 #user = request.registry.db_mongo['users'].find_one({'id': user_id})
 
@@ -380,15 +385,42 @@ def container_elixir(request):
     tmpfile.write(dockerFile)
     tmpfile.close()
 
+    (tmpfh, tmpxmlpath) = tempfile.mkstemp(prefix='elixir', suffix='.xml')
+
     softname = repo_id.split('/')[-1]
+    resource = None
+
     try:
-        subprocess.call([request.registry.settings['elixir_script'], tmpfilepath, softname])
+        parser = Parser(tmpfilepath)
+        templFile = request.registry.settings['elixir_template']
+        if not templFile or not os.path.exists(templFile):
+            return HTTPForbidden('Configuration error, missing template.xml')
+        parser.parse(templFile, tmpxmlpath)
+        username = request.registry.settings['elixir_login']
+        password = request.registry.settings['elixir_password']
+        biotools = BioTools({
+            act: 'update',
+            resFile: tmpxmlpath,
+            xmlTransportFormat: True
+        })
+        resource = biotools.get_resource(options)
+        jsonResp=biotools.execLoginCmd(username, password)
+        if 'token' not in jsonResp:
+            return HTTPForbidden('Could not authentify against bio.tools')
+        jsonResp=biotools.execRegisterOrUpdateCmd(token, tmpxmlpath, "application/xml")
+
     except Exception as e:
-        logging.error("Elixir call error: "+str(e))
-        return {'msg': 'An error occured'}
+        logging.error("Elixir bio.tools call error: "+str(e))
+        return {'msg': 'An error occured, please contact support team'}
+
     os.remove(tmpfilepath)
+    os.remove(tmpxmlpath)
+
     affiliation = request.registry.settings['elixir_affiliation']
     elixir_name = affiliation+'/'+softname
+    if 'name' in resource and resource['name']:
+    elixir_name = affiliation+'/'+resource['name']
+
     request.registry.db_mongo['repository'].update({'_id': repo['_id']},{'$set': {'meta.elixir': elixir_name}})
     return {'msg': 'Request executed', 'elixir': elixir_name}
 

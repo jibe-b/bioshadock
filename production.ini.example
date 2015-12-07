@@ -28,6 +28,10 @@ elixir_login=
 elixir_password=
 elixir_affiliation=
 biotools_url=https://bio.tools
+# template.xml used for conversion
+# https://github.com/fjrmoreews/bioshadock_client/blob/master/registry/template.xml
+elixir_template=
+
 
 # For tcp connection to docker
 docker_connect=
@@ -43,7 +47,7 @@ public_key=
 cacert_der=
 
 use_ldap = 0
-ldap.host = 
+ldap.host =
 ldap.port = 389
 ldap.dn =
 
@@ -68,7 +72,7 @@ velruse.github.consumer_secret =
 
 # Builder
 # Docker login info to push containers
-push_auth_user = 
+push_auth_user =
 push_auth_password =
 push_auth_email =
 
