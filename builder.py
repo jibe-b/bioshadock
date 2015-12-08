@@ -57,10 +57,10 @@ class BioshadockDaemon(Daemon):
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
           dockerfile = None
           if build is not None:
+              build = loads(build)
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'building'}})
               dt = datetime.datetime.now()
               timestamp = time.mktime(dt.timetuple())
-              build = loads(build)
               logging.debug(str(build))
               dockerfile = build['dockerfile']
               gitrepo = build['git']
