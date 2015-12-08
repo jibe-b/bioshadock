@@ -39,7 +39,7 @@ class BioshadockDaemon(Daemon):
       config.readfp(open(config_file))
       logging.config.fileConfig(config_file)
       while True:
-          logging.info("New build run")
+          logging.debug("New build run")
           if BioshadockDaemon.db_mongo is None:
               mongo = MongoClient(config.get('app:main','mongo_url'))
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
@@ -109,7 +109,7 @@ class BioshadockDaemon(Daemon):
               build_tag = ''
               if 'tag' in build and build['tag']:
                   build_tag = ':'+build['tag']
-              logging.info('Build: '+str(build['id']))
+              logging.warn('Build: '+str(build['id']))
               response = [line for line in BioshadockDaemon.cli.build(
                   fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
               build['response'] = response
