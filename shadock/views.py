@@ -172,7 +172,9 @@ def user_bind(request):
     form = json.loads(request.body, encoding=request.charset)
     uid = form['uid']
     password = form['password']
-    token = form['token']
+    token = None
+    if form and 'token' in form:
+        token = form['token']
     if token:
         secret = request.registry.settings['secret_passphrase']
         user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
@@ -290,7 +292,7 @@ def build(request):
 
     build_id = request.matchdict['id']
     build = request.registry.db_mongo['builds'].find_one({'_id': ObjectId(build_id)})
-    repo_id = build['repo']
+    repo_id = build['id']
     repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if repo is None:
         return HTTPNotFound()
@@ -419,7 +421,7 @@ def container_elixir(request):
     affiliation = request.registry.settings['elixir_affiliation']
     elixir_name = affiliation+'/'+softname
     if 'name' in resource and resource['name']:
-    elixir_name = affiliation+'/'+resource['name']
+        elixir_name = affiliation+'/'+resource['name']
 
     request.registry.db_mongo['repository'].update({'_id': repo['_id']},{'$set': {'meta.elixir': elixir_name}})
     return {'msg': 'Request executed', 'elixir': elixir_name}
@@ -517,7 +519,7 @@ def container_git(request):
 
     newbuild = {
         'id': repo_id,
-        'build': str(build)
+        'build': str(build),
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
@@ -1266,8 +1268,8 @@ def api_users(request):
 @view_config(route_name='home', renderer='json')
 def my_view(request):
     if request.scheme == "http":
-        return HTTPFound("https://" + request.host + "/" + request.static_path('shadock:webapp/dist/'))
-    return HTTPFound(request.static_path('shadock:webapp/dist/'))
+        return HTTPFound("https://" + request.host + "/" + request.static_path('shadock:webapp/'+request.registry.runenv+'/'))
+    return HTTPFound(request.static_path('shadock:webapp/'+request.registry.runenv+'/'))
 
 @view_config(
     context='velruse.AuthenticationComplete',
