@@ -65,7 +65,8 @@ def main(global_config, **settings):
 
     runenv = "dist"
     if "BIOSHADOCK_ENV" in os.environ and os.environ["BIOSHADOCK_ENV"] == "dev":
-        runenv = "dev"
+        runenv = "app"
+    config.registry.runenv = runenv
 
     config.add_static_view('app', 'shadock:webapp/'+runenv+'/')
     config.add_route('home', '/')
@@ -90,7 +91,7 @@ def main(global_config, **settings):
     config.add_route('container_metaelixir', '/container/metaelixir/*id')
     config.add_route('container', '/container/*id')
     config.add_route('builds', '/builds/*id')
-    config.add_route('builds', '/build/{id}')
+    config.add_route('build', '/build/{id}')
     config.add_route('api_users', '/v1/users/')
     config.add_route('api_library', '/v1/repositories/{image}/')
     config.add_route('api_library_auth', '/v1/repositories/{image}/auth')
