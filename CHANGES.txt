@@ -1,3 +1,8 @@
+0.1
+---
+  Modify build management to see progress
+  Manage elixir setup
+
 0.0
 ---
 
