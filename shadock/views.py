@@ -253,6 +253,12 @@ def containers_all(request):
         repos = request.registry.db_mongo['repository'].find()
     user_repos = []
     for repo in repos:
+        if 'builds' in repo:
+            del repo['builds']
+        if 'Dockerfile' in repo['meta'] and repo['meta']['Dockerfile']:
+            repo['meta']['Dockerfile'] = True
+        else:
+            repo['meta']['Dockerfile'] = False
         user_repos.append(repo)
     return user_repos
 
@@ -313,6 +319,12 @@ def containers(request):
     repos = request.registry.db_mongo['repository'].find({'$or': [{'user': user['id']}, {'acl_pull.members': user['id']}]})
     user_repos = []
     for repo in repos:
+        if 'builds' in repo:
+            del repo['builds']
+        if 'Dockerfile' in repo['meta'] and repo['meta']['Dockerfile']:
+            repo['meta']['Dockerfile'] = True
+        else:
+            repo['meta']['Dockerfile'] = False
         user_repos.append(repo)
     return user_repos
 

@@ -327,9 +327,11 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             $http.get('/container/'+$scope.container_id).success(function(data){
                 $scope.container = data;
                 // Get builds (without response to limit size)
-                $http.get('/builds/'+$scope.container_id).success(function(builds){
-                    $scope.builds = builds;
-                });
+                if($scope.container.user_can_push) {
+                    $http.get('/builds/'+$scope.container_id).success(function(builds){
+                        $scope.builds = builds;
+                    });
+                }
 
 
                 if(user == null) { user = {'id': 'anonymous'}}
