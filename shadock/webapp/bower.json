@@ -19,6 +19,7 @@
     "angular-ui-codemirror": "~0.2.3",
     "angular-xeditable": "~0.1.9",
     "bootstrap-social": "~4.10.1",
-    "font-awesome": "~4.5.0"
+    "font-awesome": "~4.5.0",
+    "angular-spinner": "~0.8.0"
   }
 }

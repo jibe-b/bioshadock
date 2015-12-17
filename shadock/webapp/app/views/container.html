@@ -129,7 +129,7 @@
     </tab>
     <tab heading="Dockerfile" select="go_to_dockerfile()">
     </tab>
-    <tab heading="Builds" >
+    <tab ng-if="container.user_can_push" heading="Builds" >
         <div class="row">
             <div class="col-sm-6">
                 <div><h3>Dockerfile builds</h3></div>

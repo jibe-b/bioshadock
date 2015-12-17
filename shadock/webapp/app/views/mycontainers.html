@@ -11,7 +11,7 @@
         <tbody>
             <tr ng-repeat="container in containers track by container.id">
                 <td ng-click="show_container(container)">{{ ::container.id }}
-                    <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">(Automatic build)</span>
+                    <span ng-if="container.meta.git || container.meta.Dockerfile">(Automatic build)</span>
                 </td>
                 <td>{{::container.meta.description}}</td>
                 <td>{{::container.user}}</td>
