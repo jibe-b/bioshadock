@@ -91,7 +91,12 @@ class BioshadockDaemon(Daemon):
                       os.chdir(git_repo_dir)
                   except Exception as e:
                       logging.error(str(e))
-                      BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'failed'}})
+                      BioshadockDaemon.db_mongo['builds'].update({'_id':
+                      ObjectId(build['build'])},
+                          {'$set': {'progress': 'failed',
+                                    'response': [str(e)]
+                                   }
+                          })
                       continue
                   #if dockerfile:
                   if not os.path.exists("Dockerfile"):
