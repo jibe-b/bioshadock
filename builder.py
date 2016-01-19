@@ -41,7 +41,8 @@ class BioshadockDaemon(Daemon):
       config.readfp(open(config_file))
       logging.config.fileConfig(config_file)
       log = logging.getLogger(__name__)
-      log.addHandler(LogentriesHandler('44b365c9-fbc5-3ed8-a4ac-3e14f07fe1b0'))
+      if config.get('app:main','logentries'):
+          log.addHandler(LogentriesHandler(config.get('app:main','logentries'))
       log.warn("Starting a builder")
       while True:
           log.debug("New build run")
@@ -95,10 +96,6 @@ class BioshadockDaemon(Daemon):
                       log.debug(str(git_repo_dir))
                       os.chdir(git_repo_dir)
                   except Exception as e:
-<<<<<<< HEAD
-                      log.error(str(e))
-                      BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'failed'}})
-=======
                       logging.error(str(e))
                       BioshadockDaemon.db_mongo['builds'].update({'_id':
                       ObjectId(build['build'])},
@@ -106,7 +103,6 @@ class BioshadockDaemon(Daemon):
                                     'response': [str(e)]
                                    }
                           })
->>>>>>> b520f511fc443d1924b2b0f9d888c4161915424e
                       continue
                   #if dockerfile:
                   if not os.path.exists("Dockerfile"):
