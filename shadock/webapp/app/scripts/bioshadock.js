@@ -395,6 +395,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             // Get full build
             $http.get('/build/'+build['_id']['$oid']).success(function(completebuild){
                 var dockerlog = '';
+
+                if(completebuild.response === undefined) { return; }
+
                 for(var i = 0;i < completebuild.response.length;i++) {
                     dockerlog += '<div>'+completebuild.response[i]+'</div>';
                 }
