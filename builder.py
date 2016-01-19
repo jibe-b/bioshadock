@@ -25,6 +25,8 @@ from docker import Client
 
 from git.repo.base import Repo
 
+from logentries import LogentriesHandler
+
 class BioshadockDaemon(Daemon):
 
   db_mongo = None
@@ -38,8 +40,11 @@ class BioshadockDaemon(Daemon):
       config = ConfigParser.ConfigParser()
       config.readfp(open(config_file))
       logging.config.fileConfig(config_file)
+      log = logging.getLogger(__name__)
+      log.addHandler(LogentriesHandler('44b365c9-fbc5-3ed8-a4ac-3e14f07fe1b0'))
+      log.warn("Starting a builder")
       while True:
-          logging.debug("New build run")
+          log.debug("New build run")
           if BioshadockDaemon.db_mongo is None:
               mongo = MongoClient(config.get('app:main','mongo_url'))
               BioshadockDaemon.db_mongo = mongo['mydockerhub']
@@ -61,7 +66,7 @@ class BioshadockDaemon(Daemon):
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'building'}})
               dt = datetime.datetime.now()
               timestamp = time.mktime(dt.timetuple())
-              logging.debug(str(build))
+              log.debug(str(build))
               dockerfile = build['dockerfile']
               gitrepo = build['git']
               do_git = False
@@ -80,27 +85,27 @@ class BioshadockDaemon(Daemon):
                           selectedbranch = branch_path[0]
                       if len(branch_path) > 1 and branch_path[1]:
                           subdir = branch_path[1]
-                  logging.info(str(gitrepo))
-                  logging.info("Using branch "+selectedbranch)
-                  logging.info("Directory: "+str(subdir))
+                  log.info(str(gitrepo))
+                  log.info("Using branch "+selectedbranch)
+                  log.info("Directory: "+str(subdir))
                   try:
                       Repo.clone_from(gitrepo, git_repo_dir, branch=selectedbranch)
                       if subdir is not None:
                           git_repo_dir = os.path.join(git_repo_dir, subdir)
-                      logging.debug(str(git_repo_dir))
+                      log.debug(str(git_repo_dir))
                       os.chdir(git_repo_dir)
                   except Exception as e:
-                      logging.error(str(e))
+                      log.error(str(e))
                       BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'failed'}})
                       continue
                   #if dockerfile:
                   if not os.path.exists("Dockerfile"):
-                      logging.debug("Overwrite Dockerfile")
+                      log.debug("Overwrite Dockerfile")
                       f = open('Dockerfile', 'w')
                       f.write(dockerfile.encode('utf-8'))
                       f.close()
                   else:
-                      logging.debug("Use git Dockerfile")
+                      log.debug("Use git Dockerfile")
                       with open ("Dockerfile", "r") as gitDockerfile:
                           dockerfile=gitDockerfile.read().encode('utf-8')
 
@@ -109,9 +114,13 @@ class BioshadockDaemon(Daemon):
               build_tag = ''
               if 'tag' in build and build['tag']:
                   build_tag = ':'+build['tag']
-              logging.warn('Build: '+str(build['id']))
-              response = [line for line in BioshadockDaemon.cli.build(
-                  fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
+              log.warn('Build: '+str(build['id']))
+              response = None
+              try:
+                  response = [line for line in BioshadockDaemon.cli.build(
+                      fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
+              except Exception as e:
+                  log.error('Build error: '+str(e))
               build['response'] = response
               if build['response']:
                   last = build['response'][len(build['response'])-1]
