@@ -42,7 +42,7 @@ class BioshadockDaemon(Daemon):
       logging.config.fileConfig(config_file)
       log = logging.getLogger(__name__)
       if config.get('app:main','logentries'):
-          log.addHandler(LogentriesHandler(config.get('app:main','logentries'))
+          log.addHandler(LogentriesHandler(config.get('app:main','logentries')))
       log.warn("Starting a builder")
       while True:
           log.debug("New build run")
