@@ -20,4 +20,4 @@ bcrypt==2.0.0
 ldap3==0.9.9.1
 velruse==1.1.1
 basicauth
-
+logentries

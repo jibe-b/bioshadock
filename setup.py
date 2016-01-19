@@ -28,7 +28,8 @@ requires = [
     'gunicorn',
     'gevent',
     'velruse',
-    'bioshadock_biotools'
+    'bioshadock_biotools',
+    'logentries'
     ]
 
 setup(name='shadock',
