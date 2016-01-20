@@ -485,6 +485,7 @@ def container_tag(request):
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
+        'cwl_path': container['meta']['cwl_path'],
         'user': user_id,
         'tag': tag
     }
@@ -535,6 +536,7 @@ def container_git(request):
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
         'git': container['meta']['git'],
+        'cwl_path': container['meta']['cwl_path'],
         'user': user_id
     }
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
@@ -568,7 +570,8 @@ def container_dockerfile(request):
         'date': datetime.datetime.now(),
         'dockerfile': dockerfile,
         'git': form['git'],
-        'user': user['id']
+        'user': user['id'],
+        'cwl_path': repo['meta']['cwl_path']
     }
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
@@ -628,6 +631,8 @@ def container_update(request):
         form['meta']['git'] = None
     if 'elixir' not in form['meta']:
         form['meta']['elixir'] = None
+    if 'cwl_path' not in form['meta']:
+        form['meta']['cwl_path'] = None
 
     updates = {
         'acl_push.members': form['acl_push']['members'],
@@ -637,6 +642,7 @@ def container_update(request):
         'meta.terms': form['meta']['terms'],
         'meta.git': form['meta']['git'],
         'meta.elixir': form['meta']['elixir'],
+        'meta.cwl_path': form['meta']['cwl_path'],
         'visible': form['visible']
     }
     repo['acl_push']['members'] = form['acl_push']['members']
@@ -644,6 +650,7 @@ def container_update(request):
     repo['meta']['description'] = form['meta']['description']
     repo['meta']['tags'] = form['meta']['tags']
     repo['meta']['terms'] = form['meta']['terms']
+    repo['meta']['cwl_path'] = form['meta']['cwl_path']
     repo['visible'] = form['visible']
     if is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']:
         repo['user_can_push'] = True
@@ -688,6 +695,7 @@ def containers_new(request):
                         {'$set': {'meta.description': form['description'],
                                   'meta.Dockerfile': form['dockerfile'],
                                   'meta.git': form['git'],
+                                  'meta.cwl_path': None,
                                   'visible': form['visible'] in ['true', 1]}
                         })
 
@@ -699,7 +707,8 @@ def containers_new(request):
             'date': datetime.datetime.now(),
             'dockerfile': form['dockerfile'],
             'git': form['git'],
-            'user': user['id']
+            'user': user['id'],
+            'cwl_path': None
         }
         request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
         repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})

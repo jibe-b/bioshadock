@@ -78,6 +78,10 @@
                         <div ng-repeat="version in elixir_versions">
                             <a target="_blank" ng-href="{{version.url}}"><i class="glyphicon glyphicon-new-window"></i> {{version.version}}</a>
                         </div>
+                            <div class="form-group">
+                                <label for="cwl_path">CWL path in git repo or URL</label>
+                                <div onaftersave="proposesave()" ng-disabled="! container.user_can_push" editable-textarea="container.meta.cwl_path">{{container.meta.cwl_path || 'none'}}</div>
+                            </div>
                     </div>
                 </div>
 
@@ -121,6 +125,16 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="panel panel-info" ng-if="container.meta.cwl">
+                    <div class="panel-heading">CWL</div>
+                    <div class="panel-body">
+                        <div><pre>
+                            {{container.meta.cwl}}
+                        </pre></div>
+                    </div>
+                </div>
+
           </div>
        </div>
 

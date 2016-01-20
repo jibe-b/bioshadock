@@ -29,7 +29,8 @@ requires = [
     'gevent',
     'velruse',
     'bioshadock_biotools',
-    'logentries'
+    'logentries',
+    'requests'
     ]
 
 setup(name='shadock',

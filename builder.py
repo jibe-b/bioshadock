@@ -6,6 +6,7 @@ import time
 from io import BytesIO
 import logging
 import logging.config
+import requests
 
 import json
 import datetime
@@ -26,6 +27,8 @@ from docker import Client
 from git.repo.base import Repo
 
 from logentries import LogentriesHandler
+
+requests.packages.urllib3.disable_warnings()
 
 class BioshadockDaemon(Daemon):
 
@@ -72,6 +75,20 @@ class BioshadockDaemon(Daemon):
               gitrepo = build['git']
               do_git = False
               git_repo_dir = None
+              # CWL
+              is_cwl = False
+              cwl_is_url = False
+              cwl = None
+              if 'cwl_path' in build and build['cwl_path'] and build['cwl_path'] != 'none':
+                  is_cwl = True
+                  build['cwl_path'] = build['cwl_path'].encode('utf-8')
+                  if build['cwl_path'].startswith('http'):
+                      cwl_is_url = True
+                      try:
+                          r = requests.get(build['cwl_path'])
+                          cwl = r.text.encode('utf-8')
+                      except Exception as e:
+                          log.error('Could not get CWL: '+str(build['cwl_path'])+" "+str(e))
               if gitrepo is not None and gitrepo and gitrepo != 'none':
                   # TODO clone repo in a dir, chdir to repo and optionally write
                   # dockerfile
@@ -91,6 +108,15 @@ class BioshadockDaemon(Daemon):
                   log.info("Directory: "+str(subdir))
                   try:
                       Repo.clone_from(gitrepo, git_repo_dir, branch=selectedbranch)
+                      if is_cwl and not cwl_is_url:
+                          if build['cwl_path'].startswith('/'):
+                              build['cwl_path'] = build['cwl_path'][1:]
+                          cwl_file = os.path.join(git_repo_dir, build['cwl_path'])
+                          if not os.path.exists(cwl_file):
+                              log.error('Could not get CWL: '+str(build['cwl_path']))
+                          else:
+                              with open (cwl_file, "r") as cwlFile:
+                                  cwl = cwlFile.read().encode('utf-8')
                       if subdir is not None:
                           git_repo_dir = os.path.join(git_repo_dir, subdir)
                       log.debug(str(git_repo_dir))
@@ -134,6 +160,7 @@ class BioshadockDaemon(Daemon):
                   if matches is None:
                       build['status'] = False
                   else:
+                      log.info('Sucessful build error: '+str(build['id']))
                       build['status'] = True
                       build['image_id'] = matches.group(1)
                       p= subprocess.Popen(["docker",
@@ -142,11 +169,15 @@ class BioshadockDaemon(Daemon):
 
               else:
                   build['status'] = False
+              if is_cwl and cwl is None:
+                  build['response'].append("Failed to get CWL")
               build['timestamp'] = timestamp
               build['progress'] = 'over'
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},build)
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
-                                                       {'$set':{'meta.Dockerfile': dockerfile}})
+                                                       {'$set':{'meta.Dockerfile': dockerfile,
+                                                                'meta.cwl': cwl
+                                                       }})
               if do_git:
                   cur_dir = os.path.dirname(os.path.realpath(__file__))
                   os.chdir(cur_dir)
