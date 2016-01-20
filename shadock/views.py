@@ -1278,13 +1278,88 @@ def api2_token(request):
 @view_config(route_name='api_users', renderer='json')
 def api_users(request):
     user = json.loads(request.body, encoding=request.charset)
-    print str(user)
     user_id = None
     existing_user = request.registry.db_mongo['users'].find_one({'id': user_id})
     if not existing_user:
         return HTTPForbidden("You must register first")
     return Response("User Created", status_code=201)
 
+@view_config(route_name='ga4gh_tools_query', renderer='json', request_method='GET')
+def ga4gh_tools_query(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tool_descriptor', renderer='json', request_method='GET')
+def ga4gh_tool_descriptor(request):
+    if 'format' in request.params and request.params['format'].lower() != 'cwl':
+        return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if 'cwl' not in repo['meta'] or not repo['meta']['cwl']:
+        return HTTPNotFound()
+    return { 'descriptor': repo['meta']['cwl'] }
+
+@view_config(route_name='ga4gh_tool_dockerfile', renderer='json', request_method='GET')
+def ga4gh_tool_dockerfile(request):
+    repo_id = request.matchdict['id']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if 'Dockerfile' not in repo['meta'] or not repo['meta']['Dockerfile']:
+        return HTTPNotFound()
+    return { 'dockerfile': repo['meta']['Dockerfile'] }
+
+
+@view_config(route_name='ga4gh_tools', renderer='json', request_method='GET')
+def ga4gh_tools(request):
+    repos = request.registry.db_mongo['repository'].find({'visible': True})
+    tools = []
+    for repo in repos:
+        toolname = repo['id'].split('/')[-1:][0]
+        if 'cwl' not in repo['meta']:
+            repo['meta']['cwl'] = None
+        if 'id' in request.params:
+            if request.params['id'] != str(repo['_id'])+'@'+request.registry.settings['service']:
+                continue
+        if 'registry' in request.params:
+            if request.params['registry'] != request.registry.settings['service']:
+                return []
+        if 'organization' in request.params:
+            if request.params['organization'] != request.registry.settings['service']:
+                return []
+        if 'name' in request.params:
+            if request.params['name'] != repo['id']:
+                continue
+        if 'toolname' in request.params:
+            if request.params['toolname'] != toolname and request.params['toolname'] not in repo['meta']['tags']:
+                continue
+        if 'description' in request.params:
+            if request.params['description'] not in repo['meta']['description']:
+                continue
+        if 'author' in request.params:
+            if request.params['author'] != repo['user']:
+                continue
+        tool = {
+            'id': str(repo['_id'])+'@'+request.registry.settings['service'],
+            'registry': request.registry.settings['service'],
+            'organization': request.registry.settings['service'],
+            'name': repo['id'],
+            'toolname': toolname,
+            #'tooltype': {},
+            'description': repo['meta']['description'],
+            'author': repo['user'],
+            'meta-version': 'latest',
+            'versions': [{
+                'name': toolname,
+                'id': str(repo['_id'])+'@'+request.registry.settings['service'],
+                'descriptor': { 'descriptor': repo['meta']['cwl'] },
+                'image': request.registry.settings['service'] + '/' + repo['id'],
+                'dockerfile': repo['meta']['Dockerfile'] 
+            }]
+        }
+        tools.append(tool)
+    return tools
 
 @view_config(route_name='home', renderer='json')
 def my_view(request):

@@ -106,6 +106,11 @@ def main(global_config, **settings):
     config.add_route('api2_token', '/v2/token/')
     config.add_route('api2_other', '/v2/*api')
     config.add_route('api_other', '/v1/*api')
+    # GA4GH API
+    config.add_route('ga4gh_tools', '/tools')
+    config.add_route('ga4gh_tools_query', '/tools/query')
+    config.add_route('ga4gh_tool_descriptor', '/tools/{id}/descriptor')
+    config.add_route('ga4gh_tool_dockerfile', '/tools/{id}/dockerfile')
     config.scan()
 
     json_renderer = JSON()
