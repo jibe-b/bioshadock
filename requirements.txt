@@ -22,3 +22,4 @@ velruse==1.1.1
 basicauth
 logentries
 requests
+bioshadock_biotools
