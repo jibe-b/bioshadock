@@ -150,7 +150,7 @@ class BioshadockDaemon(Daemon):
               response = None
               try:
                   response = [line for line in BioshadockDaemon.cli.build(
-                      fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag)]
+                      fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag, nocache=True)]
               except Exception as e:
                   log.error('Build error: '+str(e))
               build['response'] = response
