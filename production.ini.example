@@ -80,6 +80,8 @@ push_auth_email =
 # needs docker-squash installed and in path
 # optionally squash the image
 squash = 0
+# Path to executable
+docker_squash = docker-squash
 
 
 ###

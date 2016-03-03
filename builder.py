@@ -64,9 +64,10 @@ class BioshadockDaemon(Daemon):
           if BioshadockDaemon.cli is None:
               if config.get('app:main', 'docker_connect'):
                   BioshadockDaemon.cli = Client(base_url=config.get('app:main',
-                                                'docker_connect'))
+                                                'docker_connect'),
+                                                timeout=1800)
               else:
-                  BioshadockDaemon.cli = Client()
+                  BioshadockDaemon.cli = Client(timeout=1800)
               BioshadockDaemon.cli.login(username=config.get('app:main','push_auth_user'), password=config.get('app:main','push_auth_password'),
                                          email=config.get('app:main','push_auth_email'),registry=config.get('app:main','service'))
 
@@ -77,7 +78,7 @@ class BioshadockDaemon(Daemon):
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},{'$set': {'progress': 'building'}})
               dt = datetime.datetime.now()
               timestamp = time.mktime(dt.timetuple())
-              log.debug(str(build))
+              #log.debug(str(build))
               dockerfile = build['dockerfile']
               gitrepo = build['git']
               do_git = False
@@ -110,9 +111,9 @@ class BioshadockDaemon(Daemon):
                           selectedbranch = branch_path[0]
                       if len(branch_path) > 1 and branch_path[1]:
                           subdir = branch_path[1]
-                  log.info(str(gitrepo))
-                  log.info("Using branch "+selectedbranch)
-                  log.info("Directory: "+str(subdir))
+                  log.debug("Temporary directory: " + str(gitrepo))
+                  log.info("Using branch " + selectedbranch)
+                  log.info("Directory: " + str(subdir))
                   try:
                       Repo.clone_from(gitrepo, git_repo_dir, branch=selectedbranch)
                       if is_cwl and not cwl_is_url:
@@ -168,6 +169,7 @@ class BioshadockDaemon(Daemon):
 
               build['response'] = response
               if build['response']:
+                  log.debug(str(response))
                   last = build['response'][len(build['response'])-1]
                   matches = re.search('Successfully built\s+(\w+)', last)
                   if matches is None:
@@ -182,21 +184,42 @@ class BioshadockDaemon(Daemon):
                       #                     config.get('app:main', 'service')+"/"+build['id']])
                       #docker save 49b5a7a88d5 | sudo docker-squash -t jwilder/whoami:squash | docker load
                       if do_squash:
-                          log.debug("Squash image "+config.get('app:main', 'service')+"/"+build['id']]+build_tag)
+                          log.debug("Squash image "+config.get('app:main', 'service')+"/"+build['id']+build_tag)
+                          log.debug("Save image")
                           p= subprocess.Popen(["docker",
                                          "save",
-                                         config.get('app:main', 'service')+"/"+build['id']]+build_tag,
-                                         "|",
-                                         "docker-squash", "-t", config.get('app:main', 'service')+"/"+build['id']]+orig_build_tag,
-                                         "|",
-                                         "docker", "load"
-                                         )
+                                         "-o", "image.tar",
+                                         config.get('app:main', 'service')+"/"+build['id']+build_tag,
+                                         ])
                           p.wait()
-                      log.debug("Push image "+config.get('app:main', 'service')+"/"+build['id']]+orig_build_tag)
-                      response = [line for line in BioshadockDaemon.cli.push(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag, stream=True)]
-                      BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
-                      if do_squash:
-                          BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+":squash")
+                          log.debug("Squash image")
+                          p= subprocess.Popen([ config.get('app:main', 'docker-squash'),
+                                         "-i", "image.tar",
+                                         "-o", "squashed.tar",
+                                         "-t", config.get('app:main', 'service')+"/"+build['id']+orig_build_tag,
+                                         ])
+                          p.wait()
+                          log.debug("Reload image")
+                          p= subprocess.Popen([
+                                         "docker", "load", "-i", "squashed.tar"
+                                         ])
+                          p.wait()
+                      log.debug("Push image "+config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                      try:
+                          response = [line for line in BioshadockDaemon.cli.push(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag, stream=True)]
+                          log.debug(str(response))
+                      except Exception as e:
+                          log.error("Failed to push image: " + build['id']+ " "+str(e))
+                          build['status'] = False
+                          build['response'].append("Failed to push to registry")
+                      try:
+                          log.debug("Remove images for " + config.get('app:main', 'service')+"/"+build['id'])
+                          BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                          if do_squash:
+                              log.debug("Remove squash image")
+                              BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+":squash")
+                      except Exception as e:
+                          log.error("Failed to remove image " + build['id']+ " "+str(e))
 
               else:
                   build['status'] = False
@@ -209,7 +232,8 @@ class BioshadockDaemon(Daemon):
               description = None
               if container_inspect is not None:
                   entrypoint = container_inspect['Config']['Entrypoint']
-                  for label in list(labels.keys()):
+                  log.debug(str(container_inspect['Config']['Labels']))
+                  for label in list(container_inspect['Config']['Labels'].keys()):
                       label_elts = container_inspect['Config']['Labels'][label]
                       if label.endswith('Description'):
                           description = label_elts
@@ -218,7 +242,7 @@ class BioshadockDaemon(Daemon):
                               label_elts = json.loads(label_elts)
                           except Exception as e:
                               log.info("Failed to decode JSON for "+str(build['id'])+": "+str(label))
-                      labels.append({label: label_elts})
+                      labels.append({label.replace('.', '_'): label_elts})
 
               meta_info = {'meta.Dockerfile': dockerfile,
                        'meta.cwl': cwl,
