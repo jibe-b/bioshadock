@@ -47,6 +47,13 @@ Need to also setup registry location to match registry v2. Should in fact specif
 
 ## Dev / Debug
 
+For development purpose, one can skip https requirements as well as authentication:
+
+    # Allow http
+    export BIOSHADOCK_INSECURE=1
+    # Bypass password checks
+    export BIOSHADOCK_AUTH=fake
+
 
 Registry v1:
 

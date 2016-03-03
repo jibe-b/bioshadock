@@ -61,6 +61,8 @@ def can_push_to_library(username, request):
     return False
 
 def valid_user(username, password, request):
+    if 'BIOSHADOCK_AUTH' in os.environ and os.environ['BIOSHADOCK_AUTH'] == 'fake':
+        return True
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None or 'password' not in user:
         ldap_dn = request.registry.settings['ldap.dn']
@@ -1355,7 +1357,7 @@ def ga4gh_tools(request):
                 'id': str(repo['_id'])+'@'+request.registry.settings['service'],
                 'descriptor': { 'descriptor': repo['meta']['cwl'] },
                 'image': request.registry.settings['service'] + '/' + repo['id'],
-                'dockerfile': repo['meta']['Dockerfile'] 
+                'dockerfile': repo['meta']['Dockerfile']
             }]
         }
         tools.append(tool)
@@ -1363,6 +1365,8 @@ def ga4gh_tools(request):
 
 @view_config(route_name='home', renderer='json')
 def my_view(request):
+    if 'BIOSHADOCK_INSECURE' in os.environ:
+        return HTTPFound(request.static_path('shadock:webapp/'+request.registry.runenv+'/'))
     if request.scheme == "http":
         return HTTPFound("https://" + request.host + "/" + request.static_path('shadock:webapp/'+request.registry.runenv+'/'))
     return HTTPFound(request.static_path('shadock:webapp/'+request.registry.runenv+'/'))
