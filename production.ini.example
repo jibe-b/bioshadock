@@ -76,6 +76,10 @@ push_auth_user =
 push_auth_password =
 push_auth_email =
 
+# Squash
+# needs docker-squash installed and in path
+# optionally squash the image
+squash = 0
 
 
 ###

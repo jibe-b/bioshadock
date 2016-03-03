@@ -36,6 +36,9 @@ class BioshadockDaemon(Daemon):
   db_redis = None
   cli = None
 
+  def test(self, build, container_id):
+      pass
+
   def run(self):
       config_file = "development.ini"
       if "BIOSHADOCK_CONFIG" in os.environ:
@@ -47,6 +50,10 @@ class BioshadockDaemon(Daemon):
       if config.get('app:main','logentries'):
           log.addHandler(LogentriesHandler(config.get('app:main','logentries')))
       log.warn("Starting a builder")
+      do_squash = False
+      if config.has_option('app:main', 'squash') and config.get('app:main', 'squash') == '1':
+          do_squash = True
+
       while True:
           log.debug("New build run")
           if BioshadockDaemon.db_mongo is None:
@@ -148,11 +155,17 @@ class BioshadockDaemon(Daemon):
                   build_tag = ':'+build['tag']
               log.warn('Build: '+str(build['id']))
               response = None
+              container_inspect = None
               try:
+                  orig_build_tag = build_tag
+                  if do_squash:
+                      build_tag = ":squash"
                   response = [line for line in BioshadockDaemon.cli.build(
                       fileobj=f, rm=True, tag=config.get('app:main', 'service')+"/"+build['id']+build_tag, nocache=True)]
+                  container_inspect = BioshadockDaemon.cli.inspect_image(config.get('app:main', 'service')+"/"+build['id']+build_tag)
               except Exception as e:
                   log.error('Build error: '+str(e))
+
               build['response'] = response
               if build['response']:
                   last = build['response'][len(build['response'])-1]
@@ -160,12 +173,29 @@ class BioshadockDaemon(Daemon):
                   if matches is None:
                       build['status'] = False
                   else:
-                      log.info('Sucessful build error: '+str(build['id']))
+                      log.info('Successful build error: '+str(build['id']))
                       build['status'] = True
                       build['image_id'] = matches.group(1)
-                      p= subprocess.Popen(["docker",
-                                        "push",
-                                        config.get('app:main', 'service')+"/"+build['id']])
+                      #p= subprocess.Popen(["docker",
+                      #                     "push",
+                      #                     config.get('app:main', 'service')+"/"+build['id']])
+                      #docker save 49b5a7a88d5 | sudo docker-squash -t jwilder/whoami:squash | docker load
+                      if do_squash:
+                          log.debug("Squash image "+config.get('app:main', 'service')+"/"+build['id']]+build_tag)
+                          p= subprocess.Popen(["docker",
+                                         "save",
+                                         config.get('app:main', 'service')+"/"+build['id']]+build_tag,
+                                         "|",
+                                         "docker-squash", "-t", config.get('app:main', 'service')+"/"+build['id']]+orig_build_tag,
+                                         "|",
+                                         "docker", "load"
+                                         )
+                          p.wait()
+                      log.debug("Push image "+config.get('app:main', 'service')+"/"+build['id']]+orig_build_tag)
+                      response = [line for line in BioshadockDaemon.cli.push(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag, stream=True)]
+                      BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                      if do_squash:
+                          BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+":squash")
 
               else:
                   build['status'] = False
@@ -173,14 +203,38 @@ class BioshadockDaemon(Daemon):
                   build['response'].append("Failed to get CWL")
               build['timestamp'] = timestamp
               build['progress'] = 'over'
+              entrypoint = None
+              labels = []
+              description = None
+              if container_inspect is not None:
+                  entrypoint = container_inspect['Config']['Entrypoint']
+                  for label in list(labels.keys()):
+                      label_elts = container_inspect['Config']['Labels'][label]
+                      if label.endswith('Description'):
+                          description = label_elts
+                      if label_elts.startswith('{') or label_elts.startswith('['):
+                          try:
+                              label_elts = json.loads(label_elts)
+                          except Exception as e:
+                              log.info("Failed to decode JSON for "+str(build['id'])+": "+str(label))
+                      labels.append({label: label_elts})
+
+              meta_info = {'meta.Dockerfile': dockerfile,
+                       'meta.cwl': cwl,
+                       'meta.Entrypoint': entrypoint,
+                       'meta.Dockerlabels': labels
+              }
+              log.debug("Update repository "+build['id']+": "+str(meta_info))
+              if description is not None:
+                  meta_info['meta.description'] = description
+
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},build)
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
-                                                       {'$set':{'meta.Dockerfile': dockerfile,
-                                                                'meta.cwl': cwl
-                                                       }})
+                                                       {'$set': meta_info})
               if do_git:
                   cur_dir = os.path.dirname(os.path.realpath(__file__))
                   os.chdir(cur_dir)
+                  log.debug("Cleaning directory "+cur_dir+" => "+git_repo_dir)
                   shutil.rmtree(git_repo_dir)
           time.sleep(2)
 
