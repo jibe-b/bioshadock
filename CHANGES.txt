@@ -1,3 +1,9 @@
+0.2
+---
+  Add docker-squash on auto builds
+  Extract metadata from Dockerfile labels
+
+
 0.1
 ---
   Modify build management to see progress
