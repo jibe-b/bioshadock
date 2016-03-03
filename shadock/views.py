@@ -196,6 +196,8 @@ def user_bind(request):
         if not valid_user(uid, password, request):
             return HTTPUnauthorized('Invalid credentials')
     user = request.registry.db_mongo['users'].find_one({'id': uid})
+    if not user:
+        return HTTPUnauthorized('Invalid credentials')
     secret = request.registry.settings['secret_passphrase']
     del user['_id']
     token = jwt.encode({'user': user,
