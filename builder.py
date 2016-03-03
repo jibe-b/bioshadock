@@ -172,8 +172,9 @@ class BioshadockDaemon(Daemon):
                   matches = re.search('Successfully built\s+(\w+)', last)
                   if matches is None:
                       build['status'] = False
+                      log.info('Build error: '+str(build['id']))
                   else:
-                      log.info('Successful build error: '+str(build['id']))
+                      log.info('Successful build: '+str(build['id']))
                       build['status'] = True
                       build['image_id'] = matches.group(1)
                       #p= subprocess.Popen(["docker",
