@@ -38,7 +38,7 @@
                     <div class="panel-body">
                         <div class="form-group">
                             <div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git || 'none'}}</div>
-                            <div>Build hook url: <input class="form-control" value="/container/git/{{container.id}}?apikey={{user.apikey}}" disabled/></div>
+                            <div>Build hook url: <input class="form-control" value="/container/git/{{container.id}}?apikey={{user.apikey}}" disabled/><button class="btn btn-primary" ng-click="git_build()">Build</button></div>
                             <div>Build and tag hook url: <input class="form-control" value="/container/tag/{{container.id}}/TAGVALUE?apikey={{user.apikey}}" disabled/></div>
                         </div>
                     </div>

@@ -203,6 +203,21 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
           return time;
         };
 
+        $scope.git_build = function() {
+                ///container/git/{{container.id}}?apikey={{user.apikey}}
+            var req = {
+                method: 'DELETE',
+                url: '/container/git/'+$scope.container.id+'?apikey='+$scope.user.apikey,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+                };
+                $http(req).success(function(data, status, headers, config) {
+                    $scope.msg = "New build request in progress";
+
+                });
+        };
+
         $scope.addtag = function(newtag) {
             if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
             $scope.container.meta.tags.push(newtag);
