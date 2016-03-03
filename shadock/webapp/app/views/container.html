@@ -94,6 +94,23 @@
                     </div>
                 </div>
 
+                <div class="panel panel-info">
+                    <div class="panel-heading">Docker Entrypoint</div>
+                    <div class="panel-body">
+                        <div>Entrypoint: {{container.meta.Entrypoint || "none"}}</div>
+                    </div>
+                </div>
+
+                <div class="panel panel-info">
+                    <div class="panel-heading">Docker labels</div>
+                    <div class="panel-body">
+                        <ul ng-repeat="tag in container.meta.Dockerlabels">
+                            <li ng-repeat="(key, data) in tag">{{key}}: {{data}}</li>
+                        </ul>
+                    </div>
+                </div>
+
+
                 <div class="panel panel-info" ng-if="container.user_can_push">
                     <div class="panel-heading">Push members</div>
                     <div class="panel-body">
