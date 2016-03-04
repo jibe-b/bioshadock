@@ -152,9 +152,12 @@ class BioshadockDaemon(Daemon):
               f = BytesIO(dockerfile.encode('utf-8'))
 
               build_tag = ''
+              info_tag = 'latest'
               if 'tag' in build and build['tag']:
                   build_tag = ':'+build['tag']
+                  info_tag = build['tag']
               log.warn('Build: '+str(build['id']))
+
               response = None
               container_inspect = None
               try:
@@ -243,7 +246,8 @@ class BioshadockDaemon(Daemon):
               if not build['status']:
                   build['progress'] = 'failed'
 
-              build['tag'] = orig_build_tag
+
+              build['tag'] = info_tag
 
               if container_inspect is not None:
                   entrypoint = container_inspect['Config']['Entrypoint']
@@ -269,7 +273,7 @@ class BioshadockDaemon(Daemon):
               if description is not None:
                   meta_info['meta.docker_description'] = description
               if size is not None:
-                  meta_info['meta.docker_tags.'+orig_build_tag] = { 'size': int(size), 'last_updated': timestamp };
+                  meta_info['meta.docker_tags.'+info_tag] = { 'size': int(size), 'last_updated': timestamp };
               if build['status']:
                   meta_info['meta.last_updated'] = timestamp
 

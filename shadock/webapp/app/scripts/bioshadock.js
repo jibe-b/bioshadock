@@ -226,9 +226,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 if(completebuild.response === undefined) { return; }
 
                 for(var i = 0;i < completebuild.response.length;i++) {
-                    dockerlog += '<div>'+completebuild.response[i]+'</div>';
+                    dockerlog += completebuild.response[i];
                 }
-                    $scope.dockerlog = dockerlog;
+                $scope.dockerlog = dockerlog;
             });
         };
 
