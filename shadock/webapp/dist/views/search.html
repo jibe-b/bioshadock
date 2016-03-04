@@ -11,7 +11,7 @@
     <tbody>
         <tr ng-repeat="hit in hits.hits">
             <td><a ng-href="#/container/{{hit._source.id}}">{{ ::hit._source.id }}</a></td>
-            <td>{{::hit._source.meta.description}}</td>
+            <td>{{::hit._source.meta.short_description}}</td>
             <td>{{::hit._source.user}}</td>
         </tr>
     </tbody>

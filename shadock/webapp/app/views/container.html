@@ -19,7 +19,12 @@
     <div class="panel panel-info">
         <div class="panel-heading">Description</div>
         <div class="panel-body">
-            <textarea type="text" class="form-control" ng-model="container.meta.description"></textarea>
+            <form class="form-horizontal">
+                <div class="form-group"><label for="short_desc">Short description</label> <input id="short_desc" type="text" class="form-control" ng-model="container.meta.short_description"></input></div>
+            </form>
+            <form class="form-horizontal">
+                <div class="form-group"><label for="long_desc">Long description</label> <textarea id="long_desc" type="text" class="form-control" ng-model="container.meta.description"></textarea></div>
+            </form>
         </div>
     </div>
 

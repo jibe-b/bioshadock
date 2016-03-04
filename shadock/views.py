@@ -642,6 +642,7 @@ def container_update(request):
         'acl_push.members': form['acl_push']['members'],
         'acl_pull.members': form['acl_pull']['members'],
         'meta.description': form['meta']['description'],
+        'meta.short_description': form['meta']['short_description'],
         'meta.tags': form['meta']['tags'],
         'meta.terms': form['meta']['terms'],
         'meta.git': form['meta']['git'],
@@ -696,7 +697,8 @@ def containers_new(request):
     repo_id = form['name']
     if user_can_push(user['id'], repo_id, request):
         request.registry.db_mongo['repository'].update({'id': repo_id},
-                        {'$set': {'meta.description': form['description'],
+                        {'$set': {'meta.short_description': form['description'],
+                                  'meta.description': '',
                                   'meta.Dockerfile': form['dockerfile'],
                                   'meta.git': form['git'],
                                   'meta.cwl_path': None,
