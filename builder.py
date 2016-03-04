@@ -247,7 +247,7 @@ class BioshadockDaemon(Daemon):
 
               if container_inspect is not None:
                   entrypoint = container_inspect['Config']['Entrypoint']
-                  size = container_inspect['Config']['VirtualSize']
+                  size = container_inspect['VirtualSize']
                   log.debug(str(container_inspect['Config']['Labels']))
                   for label in list(container_inspect['Config']['Labels'].keys()):
                       label_elts = container_inspect['Config']['Labels'][label]
