@@ -26,9 +26,9 @@ if not args.id:
     print 'id parameter is missing'
     sys.exit(1)
 
-print config.get('app:main','db_uri')
-mongo = MongoClient(config.get('app:main','db_uri'))
-db = mongo[config.get('app:main','db_name')]
+mongo = MongoClient(config.get('app:main','mongo_url'))
+db = mongo['mydockerhub']
+
 
 user_in_db = db['users'].find_one({'id': args.id})
 if user_in_db is not None:
