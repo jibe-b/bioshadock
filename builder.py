@@ -98,9 +98,9 @@ class BioshadockDaemon(Daemon):
                       except Exception as e:
                           log.error('Could not get CWL: '+str(build['cwl_path'])+" "+str(e))
               if gitrepo is not None and gitrepo and gitrepo != 'none':
-                  # TODO clone repo in a dir, chdir to repo and optionally write
                   # dockerfile
                   git_repo_dir = tempfile.mkdtemp(suffix='.git')
+                  do_git = True
                   git_info = gitrepo.split('#')
                   gitrepo = git_info[0]
                   selectedbranch = 'master'
