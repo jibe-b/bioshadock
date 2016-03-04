@@ -234,7 +234,9 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         $scope.go_to_container = function(){
             location.replace('#/container/'+$scope.container_id);
-        }
+        };
+
+        $scope.get_container();
 })
 .controller('containerCtrl',
     function ($scope, $route, $routeParams, $document, $http, $location, $modal, Container, Config, Auth) {
@@ -276,7 +278,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
               modalInstance.result.then(function (updated_container) {
                   $scope.container = updated_container;
                   $scope.update_container(updated_container);
-                  console.log(updated_container);
               }, function () {
               });
         };
@@ -528,7 +529,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         };
 
 })
-.controller('containerModalInstanceCtrl', function ($scope, $modalInstance, Auth, items) {
+.controller('containerModalInstanceCtrl', function ($scope, $http, $modalInstance, Auth, items) {
 
   $scope.container = JSON.parse(JSON.stringify(items));
   var user = Auth.getUser();
