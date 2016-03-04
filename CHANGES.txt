@@ -2,7 +2,8 @@
 ---
   Add docker-squash on auto builds
   Extract metadata from Dockerfile labels
-
+  UI/UX updates
+  Support Markdown in description
 
 0.1
 ---

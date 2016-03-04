@@ -22,11 +22,10 @@
 
     <p>To create or push an image, you must have a <a href="http://www.genouest.org">GenOuest</a> account.</p>
     <p>Once logged, you can create containers with a Dockerfile or push your images in your repository, and set it public or private.</p>
-    <div class="alert alert-info">If you face SSL certificate issues, you must download the root certificate https://www.gandi.net/static/CAs/GandiStandardSSLCA2.pem and add it to your local certificates.
-       <pre>
-Copy file in /etc/docker/certs.d/{{service}} and /etc/docker/certs.d/{{issuer}} with name ca.crt and restart docker
-       </pre>
-If you are using Docker Toolbox (Windows or Mac), do the following
+    <div class="alert alert-info">
+        <p>If you face SSL certificate issues, you must download the root certificate https://www.gandi.net/static/CAs/GandiStandardSSLCA2.pem and add it to your local certificates.</p>
+        <p>To do so, copy file in /etc/docker/certs.d/{{service}} and /etc/docker/certs.d/{{issuer}} with name ca.crt and restart docker</p>
+        <p>If you are using Docker Toolbox (Windows or Mac), do the following</p>
        <pre>
 docker-machine ssh default
 sudo vi /etc/init.d/docker
@@ -63,4 +62,3 @@ sudo /etc/init.d/docker restart
         <a href="http://www.france-bioinformatique.fr/" title="IFB"><img src="img/ifb-logo.png" alt="IFB" height="50" width="120"></a>
         <br>
 </div>
-

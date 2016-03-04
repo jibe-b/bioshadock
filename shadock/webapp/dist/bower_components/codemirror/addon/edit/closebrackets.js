@@ -10,7 +10,6 @@
     mod(CodeMirror);
 })(function(CodeMirror) {
   var DEFAULT_BRACKETS = "()[]{}''\"\"";
-  var DEFAULT_TRIPLES = "'\"";
   var DEFAULT_EXPLODE_ON_ENTER = "[]{}";
   var SPACE_CHAR_REGEX = /\s/;
 
@@ -20,14 +19,13 @@
     if (old != CodeMirror.Init && old)
       cm.removeKeyMap("autoCloseBrackets");
     if (!val) return;
-    var pairs = DEFAULT_BRACKETS, triples = DEFAULT_TRIPLES, explode = DEFAULT_EXPLODE_ON_ENTER;
+    var pairs = DEFAULT_BRACKETS, explode = DEFAULT_EXPLODE_ON_ENTER;
     if (typeof val == "string") pairs = val;
     else if (typeof val == "object") {
       if (val.pairs != null) pairs = val.pairs;
-      if (val.triples != null) triples = val.triples;
       if (val.explode != null) explode = val.explode;
     }
-    var map = buildKeymap(pairs, triples);
+    var map = buildKeymap(pairs);
     if (explode) map.Enter = buildExplodeHandler(explode);
     cm.addKeyMap(map);
   });
@@ -54,7 +52,7 @@
     }
   }
 
-  function buildKeymap(pairs, triples) {
+  function buildKeymap(pairs) {
     var map = {
       name : "autoCloseBrackets",
       Backspace: function(cm) {
@@ -87,7 +85,7 @@
               curType = "skipThree";
             else
               curType = "skip";
-          } else if (left == right && cur.ch > 1 && triples.indexOf(left) >= 0 &&
+          } else if (left == right && cur.ch > 1 &&
                      cm.getRange(Pos(cur.line, cur.ch - 2), cur) == left + left &&
                      (cur.ch <= 2 || cm.getRange(Pos(cur.line, cur.ch - 3), Pos(cur.line, cur.ch - 2)) != left)) {
             curType = "addFour";

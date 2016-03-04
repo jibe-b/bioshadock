@@ -43,4 +43,5 @@ user_password = bcrypt.hashpw(args.pwd, bcrypt.gensalt())
 db['users'].insert({'id': args.id,
                     'email': email,
                     'password': user_password,
+                    'role': 'editor'
                     })

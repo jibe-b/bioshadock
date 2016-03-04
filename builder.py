@@ -167,7 +167,15 @@ class BioshadockDaemon(Daemon):
               except Exception as e:
                   log.error('Build error: '+str(e))
 
-              build['response'] = response
+              build['response'] = []
+              for res in response:
+                  try:
+                      json_res = json.loads(res)
+                      build['response'].append(json_res['stream'])
+                  except Exception as e:
+                      log.debug('Failed to decode json from stream output')
+                      build['response'].append(res)
+
               if build['response']:
                   log.debug(str(response))
                   last = build['response'][len(build['response'])-1]
@@ -230,8 +238,16 @@ class BioshadockDaemon(Daemon):
               entrypoint = None
               labels = []
               description = None
+              size = None
+
+              if not build['status']:
+                  build['progress'] = 'failed'
+
+              build['tag'] = orig_build_tag
+
               if container_inspect is not None:
                   entrypoint = container_inspect['Config']['Entrypoint']
+                  size = container_inspect['Config']['VirtualSize']
                   log.debug(str(container_inspect['Config']['Labels']))
                   for label in list(container_inspect['Config']['Labels'].keys()):
                       label_elts = container_inspect['Config']['Labels'][label]
@@ -247,11 +263,15 @@ class BioshadockDaemon(Daemon):
               meta_info = {'meta.Dockerfile': dockerfile,
                        'meta.cwl': cwl,
                        'meta.Entrypoint': entrypoint,
-                       'meta.Dockerlabels': labels
+                       'meta.Dockerlabels': labels,
               }
               log.debug("Update repository "+build['id']+": "+str(meta_info))
               if description is not None:
-                  meta_info['meta.description'] = description
+                  meta_info['meta.docker_description'] = description
+              if size is not None:
+                  meta_info['meta.docker_tags.'+orig_build_tag] = { 'size': int(size), 'last_updated': timestamp };
+              if build['status']:
+                  meta_info['meta.last_updated'] = timestamp
 
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},build)
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},

@@ -1,10 +1,9 @@
 <div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
-<tabset justified="true">
-  <tab heading="Info" select="go_to_info()">
-  </tab>
-  <tab heading="Dockerfile" active="true">
-      <textarea id="dockerfile" class="dockerfile" ui-codemirror="cmOption" ng-model="container.meta.Dockerfile" >
-      </textarea>
-      <button class="btn btn-primary" ng-if="container.user_can_push" ng-click="update_dockerfile()">Update</button>
-  </tab>
-</tabset>
+<div class="row">
+    <button  ng-click="go_to_info()"><i class="glyphicon glyphicon-arrow-left" aria-hidden="true"></i> Back to container</button>
+</div>
+<div class="row">
+    <textarea id="dockerfile" class="dockerfile" ui-codemirror="cmOption" ng-model="container.meta.Dockerfile" >
+    </textarea>
+    <button class="btn btn-primary" ng-if="container.user_can_push" ng-click="update_dockerfile()">Update</button>
+</div>

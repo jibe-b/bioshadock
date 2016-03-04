@@ -10,7 +10,10 @@
         </thead>
         <tbody>
             <tr ng-repeat="container in containers track by container.id">
-                <td ng-click="show_container(container)">{{ ::container.id }}</td>
+                <td ng-click="show_container(container)">{{ ::container.id }}
+                    <span ng-if="container.meta.git || container.meta.Dockerfile">(Automatic build)</span>
+                     <i class="glyphicon glyphicon-chevron-right"></i>
+                </td>
                 <td>{{::container.meta.description}}</td>
                 <td>{{::container.user}}</td>
                 <td>{{::container.visible}}</td>

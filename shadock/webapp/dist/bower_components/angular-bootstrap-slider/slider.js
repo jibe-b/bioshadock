@@ -16,7 +16,10 @@ angular.module('ui.bootstrap-slider', [])
                 sliderid: '=',
                 ticks: '=',
                 ticksLabels: '=',
+                ticksSnapBounds: '=',
+                ticksPositions: '=',
                 scale: '=',
+                focus: '=',
                 formatter: '&',
                 onStartSlide: '&',
                 onStopSlide: '&',
@@ -25,7 +28,7 @@ angular.module('ui.bootstrap-slider', [])
             link: function ($scope, element, attrs, ngModelCtrl, $compile) {
                 var ngModelDeregisterFn, ngDisabledDeregisterFn;
 
-                initSlider();
+                var slider = initSlider();
 
                 function initSlider() {
                     var options = {};
@@ -35,7 +38,7 @@ angular.module('ui.bootstrap-slider', [])
                     }
 
                     function setFloatOption(key, value, defaultValue) {
-                        options[key] = value ? parseFloat(value) : defaultValue;
+                        options[key] = value || value === 0 ? parseFloat(value) : defaultValue;
                     }
 
                     function setBooleanOption(key, value, defaultValue) {
@@ -55,14 +58,18 @@ angular.module('ui.bootstrap-slider', [])
                     setOption('tooltipseparator', attrs.tooltipseparator, ':');
                     setOption('ticks', $scope.ticks);
                     setOption('ticks_labels', $scope.ticksLabels);
+                    setOption('ticks_snap_bounds', $scope.ticksSnapBounds);
+                    setOption('ticks_positions', $scope.ticksPositions);
                     setOption('scale', $scope.scale, 'linear');
+                    setOption('focus', $scope.focus);
 
                     setFloatOption('min', $scope.min, 0);
                     setFloatOption('max', $scope.max, 10);
                     setFloatOption('step', $scope.step, 1);
                     var strNbr = options.step + '';
-                    var decimals = strNbr.substring(strNbr.lastIndexOf('.') + 1);
-                    setFloatOption('precision', attrs.precision, decimals);
+                    var dotPos = strNbr.search(/[^.,]*$/);
+                    var decimals = strNbr.substring(dotPos);
+                    setFloatOption('precision', attrs.precision, decimals.length);
 
                     setBooleanOption('tooltip_split', attrs.tooltipsplit, false);
                     setBooleanOption('enabled', attrs.enabled, true);
@@ -102,8 +109,11 @@ angular.module('ui.bootstrap-slider', [])
                         setFloatOption('value', $scope.value, 5);
                     }
 
-                    if ($scope.formatter) options.formatter = $scope.$eval($scope.formatter);
-
+                    if (attrs.formatter) {
+                        options.formatter = function(value) {
+                            return $scope.formatter({value: value});
+                        }
+                    }
 
                     // check if slider jQuery plugin exists
                     if ('$' in window && $.fn.slider) {
@@ -136,17 +146,12 @@ angular.module('ui.bootstrap-slider', [])
                     angular.forEach(updateEvent, function (sliderEvent) {
                         slider.on(sliderEvent, function (ev) {
                             ngModelCtrl.$setViewValue(ev);
-                            $timeout(function () {
-                                $scope.$apply();
-                            });
                         });
                     });
                     slider.on('change', function (ev) {
                         ngModelCtrl.$setViewValue(ev.newValue);
-                        $timeout(function () {
-                            $scope.$apply();
-                        });
                     });
+
 
                     // Event listeners
                     var sliderEvents = {
@@ -158,16 +163,9 @@ angular.module('ui.bootstrap-slider', [])
                         var fn = $parse(attrs[sliderEventAttr]);
                         slider.on(sliderEvent, function (ev) {
                             if ($scope[sliderEventAttr]) {
-                                
-                                var callback = function () {
+                                $scope.$apply(function () {
                                     fn($scope.$parent, { $event: ev, value: ev });
-                                }
-
-                                if ($rootScope.$$phase) {
-                                    $scope.$evalAsync(callback);
-                                } else {
-                                    $scope.$apply(callback);
-                                }
+                                });
                             }
                         });
                     });
@@ -195,15 +193,27 @@ angular.module('ui.bootstrap-slider', [])
                         }else{
                             slider.setValue(parseFloat(value));
                         }
+                        slider.relayout();
                     }, true);
+
+                    return slider;
                 }
 
 
-                var watchers = ['min', 'max', 'step', 'range', 'scale'];
+                var watchers = ['min', 'max', 'step', 'range', 'scale', 'ticksLabels'];
                 angular.forEach(watchers, function (prop) {
                     $scope.$watch(prop, function () {
-                        initSlider();
+                        slider = initSlider();
                     });
+                });
+
+                var globalEvents = ['relayout', 'refresh', 'resize'];
+                angular.forEach(globalEvents, function(event) {
+                    if(angular.isFunction(slider[event])) {
+                        $scope.$on('slider:' + event, function () {
+                            slider[event]();
+                        });
+                    }
                 });
             }
         };

@@ -24,18 +24,6 @@
     return cm.showHint(newOpts);
   };
 
-  var asyncRunID = 0;
-  function retrieveHints(getter, cm, options, then) {
-    if (getter.async) {
-      var id = ++asyncRunID;
-      getter(cm, function(hints) {
-        if (asyncRunID == id) then(hints);
-      }, options);
-    } else {
-      then(getter(cm, options));
-    }
-  }
-
   CodeMirror.defineExtension("showHint", function(options) {
     // We want a single cursor position.
     if (this.listSelections().length > 1 || this.somethingSelected()) return;
@@ -46,7 +34,10 @@
     if (!getHints) return;
 
     CodeMirror.signal(this, "startCompletion", this);
-    return retrieveHints(getHints, this, completion.options, function(hints) { completion.showHints(hints); });
+    if (getHints.async)
+      getHints(this, function(hints) { completion.showHints(hints); }, completion.options);
+    else
+      return completion.showHints(getHints(this, completion.options));
   });
 
   function Completion(cm, options) {
@@ -111,7 +102,11 @@
       function update() {
         if (finished) return;
         CodeMirror.signal(data, "update");
-        retrieveHints(completion.options.hint, completion.cm, completion.options, finishUpdate);
+        var getHints = completion.options.hint;
+        if (getHints.async)
+          getHints(completion.cm, finishUpdate, completion.options);
+        else
+          finishUpdate(getHints(completion.cm, completion.options));
       }
       function finishUpdate(data_) {
         data = data_;
@@ -248,7 +243,7 @@
         }
       }
     }
-    var overlapX = box.right - winW;
+    var overlapX = box.left - winW;
     if (overlapX > 0) {
       if (box.right - box.left > winW) {
         hints.style.width = (winW - 5) + "px";

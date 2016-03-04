@@ -3,7 +3,7 @@
 'use strict';
 
 // Declare app level module which depends on filters, and services
-var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'ngCookies', 'ngRoute', 'ui.utils', 'ui.bootstrap', 'datatables', 'ui.codemirror', 'xeditable'])
+var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'ngCookies', 'ngRoute', 'ui.utils', 'ui.bootstrap', 'datatables', 'ui.codemirror', 'xeditable', 'btford.markdown'])
 .config(function($routeProvider, $locationProvider) {
   $routeProvider
   .when('/', {
@@ -45,6 +45,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
   .when('/dockerfile/:path*', {
     templateUrl: 'views/dockerfile.html',
     controller: 'containerDockerFileCtrl'
+  })
+  .when('/builds/:path*', {
+    templateUrl: 'views/dockerbuilds.html',
+    controller: 'containerBuildsCtrl'
   })
   .when('/login', {
     templateUrl: 'views/login.html',
@@ -178,16 +182,14 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     }
 
 })
-.controller('containerCtrl',
+
+
+.controller('containerBuildsCtrl',
     function ($scope, $route, $routeParams, $document, $http, $location, Container, Config, Auth) {
         $scope.container_id = $routeParams.path;
         $scope.msg = '';
-        $scope.tag = 'latest'
         var user = Auth.getUser();
         $scope.user = user;
-        $scope.show_save = false;
-        $scope.newtag = '';
-        $scope.newterm = '';
 
         $scope.convert_timestamp_to_date = function(UNIX_timestamp){
           if(UNIX_timestamp=='' || UNIX_timestamp===null || UNIX_timestamp===undefined) { return '';}
@@ -203,78 +205,104 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
           return time;
         };
 
-        $scope.git_build = function() {
-                ///container/git/{{container.id}}?apikey={{user.apikey}}
-            var req = {
-                method: 'DELETE',
-                url: '/container/git/'+$scope.container.id+'?apikey='+$scope.user.apikey,
-                headers: {
-                    'Content-Type': 'application/json'
+        $scope.get_container = function(){
+            //Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $http.get('/container/'+$scope.container_id).success(function(data){
+                $scope.container = data;
+                // Get builds (without response to limit size)
+                if($scope.container.user_can_push) {
+                    $http.get('/builds/'+$scope.container_id).success(function(builds){
+                        $scope.builds = builds;
+                    });
                 }
-                };
-                $http(req).success(function(data, status, headers, config) {
-                    $scope.msg = "New build request in progress";
-
-                });
+            });
         };
 
-        $scope.addtag = function(newtag) {
-            if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
-            $scope.container.meta.tags.push(newtag);
-            $scope.show_save = true;
+        $scope.show_log = function(build){
+            // Get full build
+            $http.get('/build/'+build['_id']['$oid']).success(function(completebuild){
+                var dockerlog = '';
+
+                if(completebuild.response === undefined) { return; }
+
+                for(var i = 0;i < completebuild.response.length;i++) {
+                    dockerlog += '<div>'+completebuild.response[i]+'</div>';
+                }
+                    $scope.dockerlog = dockerlog;
+            });
+        };
+
+        $scope.go_to_container = function(){
+            location.replace('#/container/'+$scope.container_id);
         }
+})
+.controller('containerCtrl',
+    function ($scope, $route, $routeParams, $document, $http, $location, $modal, Container, Config, Auth) {
+        $scope.container_id = $routeParams.path;
+        $scope.msg = '';
+        $scope.tag = 'latest'
+        var user = Auth.getUser();
+        $scope.user = user;
+        $scope.show_save = false;
+        $scope.newtag = '';
+        $scope.newterm = '';
 
-        $scope.addterm = function(newterm) {
-            if(newterm=='' ||  $scope.container.meta.terms.indexOf(newterm)>=0) { return;}
-            $scope.container.meta.terms.push(newterm);
-            $scope.show_save = true;
-        }
+        $scope.animationsEnabled = true;
 
-        $scope.add_member_push = function(member) {
-            if(member=='' ||  $scope.container.acl_push.members.indexOf(member)>=0) { return;}
-            $scope.container.acl_push.members.push(member);
-            $scope.container.acl_pull.members.push(member);
-            $scope.show_save = true;
-        }
+        $scope.container_status = '';
 
-        $scope.add_member_pull = function(member) {
-            if(member=='' ||  $scope.container.acl_pull.members.indexOf(member)>=0) { return;}
-            $scope.container.acl_pull.members.push(member);
-            $scope.show_save = true;
-        }
-
-        $scope.delete_tag = function(elt) {
-            var index =  $scope.container.meta.tags.indexOf(elt);
-            if (index > -1) {
-                 $scope.container.meta.tags.splice(index, 1);
-                 $scope.show_save = true;
-            }
-        };
-
-        $scope.delete_term = function(elt) {
-            var index =  $scope.container.meta.terms.indexOf(elt);
-            if (index > -1) {
-                 $scope.container.meta.terms.splice(index, 1);
-                 $scope.show_save = true;
-            }
-        };
-
-        $scope.delete_member_pull = function(elt) {
-            var index =  $scope.container.acl_pull.members.indexOf(elt);
-            if (index > -1) {
-                 $scope.container.acl_pull.members.splice(index, 1);
-                 $scope.show_save = true;
-            }
+        $scope.formatSizeUnits = function (bytes) {
+            if(bytes === undefined) { return ""; }
+            if(bytes < 1024) return bytes + " Bytes";
+            else if(bytes < 1048576) return(bytes / 1024).toFixed(3) + " KB";
+            else if(bytes < 1073741824) return(bytes / 1048576).toFixed(3) + " MB";
+            else return(bytes / 1073741824).toFixed(3) + " GB";
         };
 
 
-        $scope.delete_member_push = function(elt) {
-            var index =  $scope.container.acl_push.members.indexOf(elt);
-            if (index > -1) {
-                 $scope.container.acl_push.members.splice(index, 1);
-                 $scope.show_save = true;
-            }
+        $scope.settings = function () {
+            var modalInstance = $modal.open({
+                                    animation: $scope.animationsEnabled,
+                                    templateUrl: 'containersettings.html',
+                                    controller: 'containerModalInstanceCtrl',
+                                    size: 'lg',
+                                    resolve: {
+                                      items: function () {
+                                        return $scope.container;
+                                      }
+                                    }
+                                  });
+
+              modalInstance.result.then(function (updated_container) {
+                  $scope.container = updated_container;
+                  $scope.update_container(updated_container);
+                  console.log(updated_container);
+              }, function () {
+              });
         };
+
+        $scope.toggleAnimation = function () {
+          $scope.animationsEnabled = !$scope.animationsEnabled;
+        };
+
+
+
+
+        $scope.convert_timestamp_to_date = function(UNIX_timestamp){
+          if(UNIX_timestamp=='' || UNIX_timestamp===null || UNIX_timestamp===undefined) { return '';}
+          var a = new Date(UNIX_timestamp*1000);
+          var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          var year = a.getFullYear();
+          var month = months[a.getMonth()];
+          var date = a.getDate();
+          var hour = a.getHours();
+          var min = a.getMinutes();
+          var sec = a.getSeconds();
+          var time = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+          return time;
+        };
+
+
 
         $scope.delete_container = function(){
                 var req = {
@@ -290,9 +318,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         };
 
-        $scope.proposesave = function(){
-            $scope.show_save = true;
-        };
 
         $scope.update_container = function(container){
             var req = {
@@ -308,6 +333,12 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                  $scope.msg = "Container updated";
                  $scope.show_save = false;
              });
+             if($scope.container.visible) {
+                 $scope.container_status = 'PUBLIC';
+             }
+             else {
+                 $scope.container_status = 'PRIVATE';
+             }
         };
 
         $scope.elixir_versions = [];
@@ -341,13 +372,12 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             //Container.get({'id': $scope.container_id}).$promise.then(function(data){
             $http.get('/container/'+$scope.container_id).success(function(data){
                 $scope.container = data;
-                // Get builds (without response to limit size)
-                if($scope.container.user_can_push) {
-                    $http.get('/builds/'+$scope.container_id).success(function(builds){
-                        $scope.builds = builds;
-                    });
+                if($scope.container.visible) {
+                    $scope.container_status = 'PUBLIC';
                 }
-
+                else {
+                    $scope.container_status = 'PRIVATE';
+                }
 
                 if(user == null) { user = {'id': 'anonymous'}}
                 var req = {
@@ -406,23 +436,14 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         });
 
-        $scope.show_log = function(build){
-            // Get full build
-            $http.get('/build/'+build['_id']['$oid']).success(function(completebuild){
-                var dockerlog = '';
-
-                if(completebuild.response === undefined) { return; }
-
-                for(var i = 0;i < completebuild.response.length;i++) {
-                    dockerlog += '<div>'+completebuild.response[i]+'</div>';
-                }
-                    $scope.dockerlog = dockerlog;
-            });
-        };
-
         $scope.go_to_dockerfile = function(){
             location.replace('#/dockerfile/'+$scope.container_id);
-        }
+        };
+
+        $scope.go_to_builds = function(){
+            location.replace('#/builds/'+$scope.container_id);
+        };
+
 })
 .controller('containerDockerFileCtrl',
     function ($scope, $route, $routeParams, $document, $http, Container, Config) {
@@ -507,9 +528,11 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         };
 
 })
-.controller('TaskModalInstanceCtrl', function ($scope, $modalInstance, items) {
+.controller('containerModalInstanceCtrl', function ($scope, $modalInstance, Auth, items) {
 
-  $scope.selectedtask = items;
+  $scope.container = JSON.parse(JSON.stringify(items));
+  var user = Auth.getUser();
+  $scope.user = user;
 
   $scope.convert_timestamp_to_date = function(UNIX_timestamp){
     if(UNIX_timestamp=='' || UNIX_timestamp===null || UNIX_timestamp===undefined) { return '';}
@@ -523,10 +546,89 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     var sec = a.getSeconds();
     var time = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
     return time;
-  }
+    };
+
+    $scope.git_tag = null;
+
+    $scope.git_build_tag = function() {
+        if($scope.git_tag==null || $scope.git_tag===undefined || $scope.git_tag =='') {
+            $scope.msg = 'Tag not set';
+            return;
+        }
+        var req = {
+            method: 'GET',
+            url: '/container/tag/'+$scope.container.id+'/'+$scope.git_tag+'?apikey='+$scope.user.apikey,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+            };
+            $http(req).success(function(data, status, headers, config) {
+                $scope.msg = "New build/tag request in progress";
+
+            });
+    }
+
+    $scope.git_build = function() {
+            ///container/git/{{container.id}}?apikey={{user.apikey}}
+        var req = {
+            method: 'GET',
+            url: '/container/git/'+$scope.container.id+'?apikey='+$scope.user.apikey,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+            };
+            $http(req).success(function(data, status, headers, config) {
+                $scope.msg = "New build request in progress";
+
+            });
+    };
+
+    $scope.addtag = function(newtag) {
+        if(newtag=='' ||  $scope.container.meta.tags.indexOf(newtag)>=0) { return;}
+        $scope.container.meta.tags.push(newtag);
+        $scope.show_save = true;
+    };
+
+    $scope.delete_tag = function(elt) {
+        var index =  $scope.container.meta.tags.indexOf(elt);
+        if (index > -1) {
+             $scope.container.meta.tags.splice(index, 1);
+             $scope.show_save = true;
+        }
+    };
+
+    $scope.add_member_push = function(member) {
+        if(member=='' ||  $scope.container.acl_push.members.indexOf(member)>=0) { return;}
+        $scope.container.acl_push.members.push(member);
+        $scope.container.acl_pull.members.push(member);
+        $scope.show_save = true;
+    };
+
+    $scope.add_member_pull = function(member) {
+        if(member=='' ||  $scope.container.acl_pull.members.indexOf(member)>=0) { return;}
+        $scope.container.acl_pull.members.push(member);
+        $scope.show_save = true;
+    };
+
+    $scope.delete_member_pull = function(elt) {
+        var index =  $scope.container.acl_pull.members.indexOf(elt);
+        if (index > -1) {
+             $scope.container.acl_pull.members.splice(index, 1);
+             $scope.show_save = true;
+        }
+    };
+
+
+    $scope.delete_member_push = function(elt) {
+        var index =  $scope.container.acl_push.members.indexOf(elt);
+        if (index > -1) {
+             $scope.container.acl_push.members.splice(index, 1);
+             $scope.show_save = true;
+        }
+    };
 
   $scope.ok = function () {
-    //$modalInstance.close($scope.selectedtask);
+    $modalInstance.close($scope.container);
   };
 
   $scope.cancel = function () {

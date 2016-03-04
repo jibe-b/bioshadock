@@ -6,6 +6,10 @@ body { padding-top: 70px; }
 
 .content-container {margin-top: 50px;}
 
+.btn-action {
+    margin-left: 10px;
+}
+
 #logo {
     border-top: 1px solid #e2e2e2;
     background: #fff;

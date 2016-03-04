@@ -20,6 +20,7 @@
     "angular-xeditable": "~0.1.9",
     "bootstrap-social": "~4.10.1",
     "font-awesome": "~4.5.0",
-    "angular-spinner": "~0.8.0"
+    "angular-spinner": "~0.8.0",
+    "angular-markdown-directive": "~0.3.1"
   }
 }

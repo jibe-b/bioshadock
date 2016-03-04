@@ -173,7 +173,33 @@ describe("Public Method Tests", function() {
         var tooltipIsShownAfterSlide = $("#testSlider1").siblings(".slider").children("div.tooltip").hasClass("in");
         expect(tooltipIsShownAfterSlide).toBeTruthy();
       });
+      
+      it("tooltip is shown on mouse over and hides correctly after mouse leave", function() {
+        testSlider = $("#testSlider1").slider({
+          tooltip : "show"
+        });
 
+        var tooltipIsHidden = !($("#testSlider1").siblings(".slider").children("div.tooltip").hasClass("in"));
+        expect(tooltipIsHidden).toBeTruthy();
+
+        // Trigger hover
+        var mouseenterEvent = document.createEvent("Events");
+        mouseenterEvent.initEvent("mouseenter", true, true);
+        testSlider.data('slider').sliderElem.dispatchEvent(mouseenterEvent);
+
+        var tooltipIsShownAfterSlide = $("#testSlider1").siblings(".slider").children("div.tooltip").hasClass("in");
+        expect(tooltipIsShownAfterSlide).toBeTruthy();
+
+        
+        // Trigger leave
+        var mouseleaveEvent = document.createEvent("Events");
+        mouseleaveEvent.initEvent("mouseleave", true, true);
+        testSlider.data('slider').sliderElem.dispatchEvent(mouseleaveEvent);
+        
+        var tooltipIsAgainHidden = !($("#testSlider1").siblings(".slider").children("div.tooltip").hasClass("in"));
+        expect(tooltipIsAgainHidden).toBeTruthy();
+      });
+      
       it("tooltip is always shown if set to 'always'", function() {
         testSlider = $("#testSlider1").slider({
           tooltip : "always"
@@ -427,77 +453,6 @@ describe("Public Method Tests", function() {
 
       var sliderValue = testSlider.slider('getValue');
       expect(sliderValue).toBe(valueToSet);
-    });
-  });
-
-
-  describe("'destroy()' tests", function() {
-    describe("slider instance tests", function() {
-      beforeEach(function() {
-        testSlider = $("#testSlider1").slider();
-      });
-
-      it("removes the extra DOM elements associated with a slider", function() {
-        testSlider.slider('destroy');
-
-        var sliderParentElement = $("#testSlider1").parent('div.slider').length,
-            sliderChildrenElements = $("#testSlider1").siblings('div.slider-track, div.tooltip').length;
-
-        expect(sliderParentElement).toBe(0);
-        expect(sliderChildrenElements).toBe(0);
-      });
-
-      describe("unbinds all slider events", function() {
-        var flag, evtName;
-
-        beforeEach(function() {
-          flag = false;
-        });
-
-        it("unbinds from 'slideStart' event", function() {
-          evtName = 'slideStart';
-          testSlider.on(evtName, function() {
-            flag = true;
-          });
-          testSlider.slider('destroy');
-          testSlider.trigger(evtName);
-          expect(flag).toBeFalsy();
-        });
-
-        it("unbinds from 'slide' event", function() {
-          evtName = 'slide';
-          testSlider.on(evtName, function() {
-            flag = true;
-          });
-          testSlider.slider('destroy');
-          testSlider.trigger(evtName);
-          expect(flag).toBeFalsy();
-        });
-
-        it("unbinds from 'slideStop' event", function() {
-          evtName = 'slideStop';
-          testSlider.on(evtName, function() {
-            flag = true;
-          });
-          testSlider.slider('destroy');
-          testSlider.trigger(evtName);
-          expect(flag).toBeFalsy();
-        });
-
-        it("unbinds from 'slideChange' event", function() {
-          evtName = 'slideChange';
-          testSlider.on(evtName, function() {
-            flag = true;
-          });
-          testSlider.slider('destroy');
-          testSlider.trigger(evtName);
-          expect(flag).toBeFalsy();
-        });
-      });
-
-      afterEach(function() {
-        testSlider = null;
-      });
     });
   });
 

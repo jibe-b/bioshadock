@@ -1,18 +1,136 @@
-  <tabset justified="true">
-    <tab heading="Info" active="true">
-        <div class="row">
-            <h2>{{container.id}} <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger" ng-click="delete_container()">Delete</button></span></h2>
-            <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}</div>
+<script type="text/ng-template" id="containersettings.html">
+    <div class="modal-header">
+        <h3 class="modal-title">{{container.id}} settings</h3>
+    </div>
+    <div class="modal-body">
+    <div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">General</div>
+        <div class="panel-body">
+            <div class="checkbox" ng-if="container.user_can_push">
+                <label>
+                <input type="checkbox" ng-model="container.visible"> Public
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">Description</div>
+        <div class="panel-body">
+            <textarea type="text" class="form-control" ng-model="container.meta.description"></textarea>
+        </div>
+    </div>
+
+
+    <div class="panel panel-info" ng-if="container.user_can_push">
+        <div class="panel-heading">Git url and hooks</div>
+        <div class="panel-body">
+            <div class="form-group">
+                <div class="form-group"><input type="text" class="form-control" ng-model="container.meta.git"></input></div>
+                <form class="form-inline" ng-if="container.meta.git"><div class="form-group">Build hook url: <input class="form-control" value="/container/git/{{container.id}}?apikey={{user.apikey}}" disabled/><button class="btn btn-primary" ng-click="git_build()">Build</button></div></form>
+                <form class="form-inline" ng-if="container.meta.git"><div class="form-group">Build and tag hook url: <input class="form-control" value="/container/tag/{{container.id}}/TAGVALUE?apikey={{user.apikey}}" disabled/><input type="text" class="form-control" ng-model="git_tag"></input><button class="btn btn-primary" ng-click="git_build_tag()">Build and tag</button></div></div></form>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">Metadata tags</div>
+        <div class="panel-body">
+            <form ng-if="container.user_can_push" class="form-inline">
+                <div class="form-group">
+                    <label for="newtag">Tag</label>
+                    <input type="text" class="form-control" ng-model="newtag" id="newtag" placeholder="alignment"/>
+                </div>
+                <button type="button" ng-click="$parent.addtag(newtag)" class="btn btn-primary">Add</button>
+            </form>
+            <div class="row tags">
+                <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}} <span ng-if="container.user_can_push"><i ng-click="delete_tag(tag)" class="glyphicon glyphicon-trash"> </i></span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-info">
+        <div class="panel-heading">bio.tools</div>
+        <div class="panel-body">
+            <form class="form-inline">
+                <div class="form-group">
+                    <label for="elixir">Identifier</label>
+                    <input type="text" class="form-control" ng-model="container.meta.elixir" id="elixir" placeholder="affiliation/name"/>
+                </div>
+                <div class="form-group">
+                    <label for="cwl_path">CWL path in git repo or URL</label>
+                    <input class="form-control" ng-model="container.meta.cwl_path"></input>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <div class="panel panel-info" ng-if="container.user_can_push">
+        <div class="panel-heading">Push members</div>
+        <div class="panel-body">
+            <form ng-if="container.user_can_push" class="form-inline">
+                <div class="form-group">
+                    <label for="member_push">User id</label>
+                    <input type="text" class="form-control"  ng-model="member_push" id="member_push" placeholder="Jane Doe"/>
+               </div>
+               <button ng-click="$parent.add_member_push(member_push)" type="button" class="btn btn-primary">Add</button>
+            </form>
+            <div ng-repeat="member in container.acl_push.members">
+                <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_push(member)" class="glyphicon glyphicon-trash"> </i></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-info" ng-if="container.user_can_push">
+        <div class="panel-heading">Pull members</div>
+        <div class="panel-body">
+            <form ng-if="container.user_can_push" class="form-inline">
+                <div class="form-group">
+                    <label for="member_pull">User id</label>
+                    <input type="text" class="form-control" ng-model="member_pull" id="member_pull" placeholder="Jane Doe"/>
+                </div>
+                <button ng-click="$parent.add_member_pull(member_pull)" type="button" class="btn btn-primary">Add</button>
+            </form>
+            <div ng-repeat="member in container.acl_pull.members">
+                <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_pull(member)" class="glyphicon glyphicon-trash"> </i></span>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" type="button" ng-click="ok()">Save</button>
+        <button class="btn btn-warning" type="button" ng-click="cancel()">Cancel</button>
+    </div>
+</script>
+
+
+<div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
+<div class="row">
+ <h3>{{container_status}} | <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">Automatic build</span></h3>
+</div>
+<div class="row">
+            <h2>{{container.id}}
+                <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span></h2>
+                <span class="pull-right"><button class="btn btn-primary btn-action" ng-click="go_to_dockerfile()">Dockerfile</button></span>
+                <span class="pull-right"><button class="btn btn-primary btn-action" ng-if="container.user_can_push" ng-click="go_to_builds()">Builds</button></span>
+                <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger btn-action" ng-click="delete_container()">Delete</button></span></h2>
+            <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}  <span ng-if="container.meta.last_updated"> - Last pushed: {{ convert_timestamp_to_date(container.meta.last_updated)}}</span></div>
         </div>
         <div class="alert alert-info" role="alert">
-          <p>docker pull {{service}}/{{container.id}}[:tag]</p>
+          <p>docker pull {{service}}/{{container.id}}[:tag]
+          <button ng-if="user.role=='admin'" class="pull-right btn btn-warning" ng-click="elixir()">Push to Elixir registry</button>
+        </p>
         </div>
         <div class="row">
             <div class="col-sm-6">
                 <div class="panel panel-info">
                     <div class="panel-heading">Description</div>
                     <div class="panel-body">
-                         <div onaftersave="proposesave()" editable-textarea="container.meta.description">{{container.meta.description||'none'}}</div>
+                        <div btf-markdown="container.meta.description||container.meta.docker_description||'none'">
+                        </div>
                     </div>
                 </div>
                 <div class="panel panel-info">
@@ -20,7 +138,7 @@
                     <div class="panel-body">
                          <div class="checkbox" ng-if="container.user_can_push">
                              <label>
-                             <input type="checkbox" ng-model="container.visible" ng-change="proposesave()"> Public
+                             <input type="checkbox" ng-model="container.visible" disabled> Public
                              </label>
                          </div>
                          <div>Author: {{container.user}}</div>
@@ -32,100 +150,72 @@
                     <div class="panel-heading">Git url and hooks</div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <div onaftersave="proposesave()" editable-textarea="container.meta.git">{{container.meta.git || 'none'}}</div>
-                            <div>Build hook url: <input class="form-control" value="/container/git/{{container.id}}?apikey={{user.apikey}}" disabled/></div>
-                            <div>Build and tag hook url: <input class="form-control" value="/container/tag/{{container.id}}/TAGVALUE?apikey={{user.apikey}}" disabled/></div>
+                            <div>{{container.meta.git || 'none'}}</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="panel panel-info" ng-if="container.user_can_push">
+                <div class="panel panel-info">
                     <div class="panel-heading">Metadata tags</div>
                     <div class="panel-body">
-                        <form ng-if="container.user_can_push" class="form-inline">
-                            <div class="form-group">
-                                <label for="newtag">Tag</label>
-                                <input type="text" class="form-control" ng-model="newtag" id="newtag" placeholder="alignment"/>
-                            </div>
-                            <button type="button" ng-click="$parent.addtag(newtag)" class="btn btn-primary">Add</button>
-                        </form>
                         <div class="row tags">
-                            <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}} <span ng-if="container.user_can_push"><i ng-click="delete_tag(tag)" class="glyphicon glyphicon-trash"> </i></span></span>
+                            <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}}</span>
                         </div>
                     </div>
                 </div>
- 
 
-                <div class="row">
-                    <button type="button" ng-if="show_save && container.user_can_push" class="btn btn-primary" ng-click="update_container(container)">Update container info</button>
-                </div>
             </div>
             <div class="col-sm-6">
+                <div class="panel panel-info">
+                    <div class="panel-heading">bio.tools</div>
+                    <div class="panel-body">
+                        <form class="form-inline">
+                            <div class="form-group">
+                                <label for="elixir">Identifier</label>
+                                <input id="elixir" type="text" disabled class="form-control" ng-model="container.meta.elixir"/>
+                            </div>
+                        </form>
+                        <div ng-repeat="version in elixir_versions">
+                            <a target="_blank" ng-href="{{version.url}}"><i class="glyphicon glyphicon-new-window"></i> {{version.version}}</a>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="panel panel-info">
                     <div class="panel-heading">Docker tags</div>
                     <div class="panel-body">
                         <div ng-repeat="tag in tags">
-                            <i class="glyphicon glyphicon-tag"></i> {{tag}}
+                            <i class="glyphicon glyphicon-tag"></i> {{tag}} <span ng-if="container.meta.docker_tags[tag]"> - {{formatSizeUnits(container.meta.docker_tags[tag].size)}} - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag].last_updated)}}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="panel panel-info" ng-if="container.user_can_push">
-                    <div class="panel-heading">Push members</div>
+                <div class="panel panel-info">
+                    <div class="panel-heading">Docker Entrypoint</div>
                     <div class="panel-body">
-                        <form ng-if="container.user_can_push" class="form-inline">
-                            <div class="form-group">
-                                <label for="member_push">User id</label>
-                                <input type="text" class="form-control"  ng-model="member_push" id="member_push" placeholder="Jane Doe"/>
-                           </div>
-                           <button ng-click="$parent.add_member_push(member_push)" type="button" class="btn btn-primary">Add</button>
-                        </form>
-                        <div ng-repeat="member in container.acl_push.members">
-                            <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_push(member)" class="glyphicon glyphicon-trash"> </i></span>
-                        </div>
+                        <div>Entrypoint: {{container.meta.Entrypoint || "none"}}</div>
                     </div>
                 </div>
 
-                <div class="panel panel-info" ng-if="container.user_can_push">
-                    <div class="panel-heading">Pull members</div>
+                <div class="panel panel-info">
+                    <div class="panel-heading">Docker labels</div>
                     <div class="panel-body">
-                        <form ng-if="container.user_can_push" class="form-inline">
-                            <div class="form-group">
-                                <label for="member_pull">User id</label>
-                                <input type="text" class="form-control" ng-model="member_pull" id="member_pull" placeholder="Jane Doe"/>
-                            </div>
-                            <button ng-click="$parent.add_member_pull(member_pull)" type="button" class="btn btn-primary">Add</button>
-                        </form>
-                        <div ng-repeat="member in container.acl_pull.members">
-                            <i class="glyphicon glyphicon-user"></i> {{member}} <span ng-if="container.user_can_push"><i ng-click="delete_member_pull(member)" class="glyphicon glyphicon-trash"> </i></span>
-                        </div>a
+                        <ul ng-repeat="tag in container.meta.Dockerlabels">
+                            <li ng-repeat="(key, data) in tag">{{key}}: {{data}}</li>
+                        </ul>
                     </div>
                 </div>
+
+                <div class="panel panel-info" ng-if="container.meta.cwl">
+                    <div class="panel-heading">CWL</div>
+                    <div class="panel-body">
+                        <div><pre>
+                            {{container.meta.cwl}}
+                        </pre></div>
+                    </div>
+                </div>
+
           </div>
        </div>
 
-     </div>
-
-    </tab>
-    <tab heading="Dockerfile" select="go_to_dockerfile()">
-    </tab>
-    <tab heading="Builds" >
-        <div class="row">
-            <div class="col-sm-6">
-                <div><h3>Dockerfile builds</h3></div>
-                <div ng-repeat="build in container.builds">
-                    <div ng-if="build.status" class="alert alert-success" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
-                    <div ng-if="! build.status" class="alert alert-danger" ng-click="show_log(build)">{{build.user}} {{build.image_id}}</div>
-                </div>
-            </div>
-            <div class="col-sm-6">
-                <div><h3>Dockerfile builds log</h3></div>
-                <div ng-bind-html="dockerlog">
-                </div>
-            </div>
-
-        </div>
-
-    </tab>
-  </tabset>
+</div>
