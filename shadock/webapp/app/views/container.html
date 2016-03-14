@@ -113,28 +113,35 @@
 
 
 <div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
+
 <div class="row">
  <h3>{{container_status}} | <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">Automatic build</span></h3>
 </div>
+
+
+<div itemscope itemtype="http://schema.org/SoftwareApplication">
+
 <div class="row">
-            <h2>{{container.id}}
-                <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span></h2>
-                <span class="pull-right"><button class="btn btn-primary btn-action" ng-click="go_to_dockerfile()">Dockerfile</button></span>
-                <span class="pull-right"><button class="btn btn-primary btn-action" ng-if="container.user_can_push" ng-click="go_to_builds()">Builds</button></span>
-                <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger btn-action" ng-click="delete_container()">Delete</button></span></h2>
-            <div><i class="glyphicon glyphicon-download"> </i> {{container.pulls}}  <span ng-if="container.meta.last_updated"> - Last pushed: {{ convert_timestamp_to_date(container.meta.last_updated)}}</span></div>
-        </div>
-        <div class="alert alert-info" role="alert">
-          <p>docker pull {{service}}/{{container.id}}[:tag]
+    <meta itemprop="applicationCategory" content ="container"/>
+    <meta itemprop="applicationSubCategory" content ="docker"/>
+    <h2><span itemprop="name">{{container.id}}</span>
+        <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span></h2>
+        <span class="pull-right"><button class="btn btn-primary btn-action" ng-click="go_to_dockerfile()">Dockerfile</button></span>
+        <span class="pull-right"><button class="btn btn-primary btn-action" ng-if="container.user_can_push" ng-click="go_to_builds()">Builds</button></span>
+        <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger btn-action" ng-click="delete_container()">Delete</button></span></h2>
+        <div><i class="glyphicon glyphicon-download"> </i> <span>{{container.pulls || 0}}</span>  <span ng-if="container.meta.last_updated"> - Last pushed: {{ convert_timestamp_to_date(container.meta.last_updated)}}</span></div>
+</div>
+<div class="alert alert-info" role="alert">
+    <p>docker pull {{service}}/{{container.id}}[:tag]
           <button ng-if="user.role=='admin'" class="pull-right btn btn-warning" ng-click="elixir()">Push to Elixir registry</button>
-        </p>
-        </div>
-        <div class="row">
+    </p>
+</div>
+<div class="row">
             <div class="col-sm-6">
                 <div class="panel panel-info">
                     <div class="panel-heading">Description</div>
                     <div class="panel-body">
-                        <div btf-markdown="container.meta.description||container.meta.docker_description||'none'">
+                        <div btf-markdown="container.meta.description||container.meta.docker_description||'none'" itemprop="description">
                         </div>
                     </div>
                 </div>
@@ -146,8 +153,8 @@
                              <input type="checkbox" ng-model="container.visible" disabled> Public
                              </label>
                          </div>
-                         <div>Author: {{container.user}}</div>
-                         <div>Architecture: {{manifest.architecture}}</div>
+                         <div itemprop="author" itemscope itemtype="http://schema.org/Person">Author: <span itemprop="name">{{container.user}}</span></div>
+                         <div>Architecture: <span itemprop="operatingSystem">{{manifest.architecture || 'linux'}}</span></div>
                          <div>Tag: {{manifest.tag}}</div>
                     </div>
                 </div>
@@ -190,7 +197,7 @@
                     <div class="panel-heading">Docker tags</div>
                     <div class="panel-body">
                         <div ng-repeat="tag in tags">
-                            <i class="glyphicon glyphicon-tag"></i> {{tag}} <span ng-if="container.meta.docker_tags[tag]"> - {{formatSizeUnits(container.meta.docker_tags[tag].size)}} - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag].last_updated)}}</span>
+                            <i class="glyphicon glyphicon-tag"></i> <span itemprop="softwareVersion">{{tag}}</span> <span ng-if="container.meta.docker_tags[tag]"> - <span itemprop="fileSize">{{formatSizeUnits(container.meta.docker_tags[tag].size)}}</span> - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag].last_updated)}}</span>
                         </div>
                     </div>
                 </div>
@@ -222,5 +229,7 @@
 
           </div>
        </div>
+
+</div>
 
 </div>
