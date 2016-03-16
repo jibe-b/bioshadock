@@ -15,6 +15,7 @@
                 <td itemprop="item" ng-click="show_container(container)"><span itemprop="name">{{ ::container.id }}</span>
                     <span ng-if="container.meta.git || container.meta.Dockerfile">(Automatic build)</span>
                      <i class="glyphicon glyphicon-chevron-right"></i>
+                      <i ng-if="container.meta.built" class="glyphicon glyphicon-ok-circle"></i>
                       <meta itemprop="url" content ="#/container/{{container.id}}"/>
                 </td>
                 <td itemprop="description">{{::container.meta.short_description}}</td>
