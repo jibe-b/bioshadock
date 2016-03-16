@@ -1,3 +1,8 @@
+0.3
+---
+  Implement schema.org in web pages
+  Add auto tests at Docker build
+
 0.2
 ---
   Add docker-squash on auto builds
