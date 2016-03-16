@@ -65,6 +65,9 @@ def valid_user(username, password, request):
         return True
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None or 'password' not in user:
+        if 'type' in user and user['type'] == 'social':
+            if user['apikey'] and user['apikey'] == password:
+                return True
         ldap_dn = request.registry.settings['ldap.dn']
         base_dn = 'ou=People,' + ldap_dn
         ldapfilter = "(&(|(uid=" + username + ")(mail=" + username + ")))"
@@ -567,6 +570,9 @@ def container_dockerfile(request):
 
     build = request.registry.db_mongo['builds'].insert({'id': repo_id,
                                                         'progress': 'waiting'})
+    cwl_path = None
+    if 'cwl_path' in repo['meta']:
+        cwl_path = repo['meta']['cwl_path']
 
     newbuild = {
         'id': repo_id,
@@ -575,7 +581,7 @@ def container_dockerfile(request):
         'dockerfile': dockerfile,
         'git': form['git'],
         'user': user['id'],
-        'cwl_path': repo['meta']['cwl_path']
+        'cwl_path': cwl_path
     }
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
