@@ -7,7 +7,7 @@ from io import BytesIO
 import logging
 import logging.config
 import requests
-
+import base64
 import json
 import datetime
 import time
@@ -87,6 +87,11 @@ class BioshadockDaemon(Daemon):
               is_cwl = False
               cwl_is_url = False
               cwl = None
+              entrypoint = None
+              description = None
+              size = None
+              labels = []
+
               if 'cwl_path' in build and build['cwl_path'] and build['cwl_path'] != 'none':
                   is_cwl = True
                   build['cwl_path'] = build['cwl_path'].encode('utf-8')
@@ -190,6 +195,44 @@ class BioshadockDaemon(Daemon):
                       log.info('Successful build: '+str(build['id']))
                       build['status'] = True
                       build['image_id'] = matches.group(1)
+                      tests = []
+                      if container_inspect is not None:
+                          entrypoint = container_inspect['Config']['Entrypoint']
+                          size = container_inspect['VirtualSize']
+                          log.debug(str(container_inspect['Config']['Labels']))
+                          for label in list(container_inspect['Config']['Labels'].keys()):
+                              label_elts = container_inspect['Config']['Labels'][label]
+                              if label.endswith('Description'):
+                                  description = label_elts
+                              if label_elts.startswith('{') or label_elts.startswith('['):
+                                  try:
+                                      label_elts = json.loads(label_elts)
+                                  except Exception as e:
+                                      log.info("Failed to decode JSON for "+str(build['id'])+": "+str(label))
+                              labels.append({label.replace('.', '_'): label_elts})
+                              if label == 'bioshadock.tests':
+                                  tests = json.loads(base64.decode(value))
+                      if tests:
+                          for test in test:
+                              try:
+                                build['response'].append("Test: "+str(test))
+                                log.debug("Execute test for "+config.get('app:main', 'service')+"/"+build['id']+build_tag+": "+str(test))
+                                test_container = BioshadockDaemon.cli.create_container(image=config.get('app:main', 'service')+"/"+build['id']+build_tag, command=test)
+                                response = BioshadockDaemon.cli.start(container=container.get('Id'))
+                                test_container_inspect = BioshadockDaemon.cli.inspect_container(container.get('Id'))
+                                if test_container_inspect['State']['ExitCode'] != 0:
+                                    build['status'] = False
+                                    build['response'].append("Test: Failed")
+                                    break
+                                else:
+                                    build['response'].append("Test: Success")
+
+                                BioshadockDaemon.cli.remove_container(container=container.get('Id'))
+                              except Exception as e:
+                                  log.error("failed to test container "+config.get('app:main', 'service')+"/"+build['id']+build_tag)
+                                  build['status'] = False
+                                  build['response'].append("Test: Failed")
+                                  break
                       #p= subprocess.Popen(["docker",
                       #                     "push",
                       #                     config.get('app:main', 'service')+"/"+build['id']])
@@ -238,31 +281,12 @@ class BioshadockDaemon(Daemon):
                   build['response'].append("Failed to get CWL")
               build['timestamp'] = timestamp
               build['progress'] = 'over'
-              entrypoint = None
-              labels = []
-              description = None
-              size = None
 
               if not build['status']:
                   build['progress'] = 'failed'
 
 
               build['tag'] = info_tag
-
-              if container_inspect is not None:
-                  entrypoint = container_inspect['Config']['Entrypoint']
-                  size = container_inspect['VirtualSize']
-                  log.debug(str(container_inspect['Config']['Labels']))
-                  for label in list(container_inspect['Config']['Labels'].keys()):
-                      label_elts = container_inspect['Config']['Labels'][label]
-                      if label.endswith('Description'):
-                          description = label_elts
-                      if label_elts.startswith('{') or label_elts.startswith('['):
-                          try:
-                              label_elts = json.loads(label_elts)
-                          except Exception as e:
-                              log.info("Failed to decode JSON for "+str(build['id'])+": "+str(label))
-                      labels.append({label.replace('.', '_'): label_elts})
 
               meta_info = {'meta.Dockerfile': dockerfile,
                        'meta.cwl': cwl,
@@ -276,6 +300,7 @@ class BioshadockDaemon(Daemon):
                   meta_info['meta.docker_tags.'+info_tag] = { 'size': int(size), 'last_updated': timestamp };
               if build['status']:
                   meta_info['meta.last_updated'] = timestamp
+                  meta_info['meta.built'] = True
 
               BioshadockDaemon.db_mongo['builds'].update({'_id': ObjectId(build['build'])},build)
               BioshadockDaemon.db_mongo['repository'].update({'id': build['id']},
