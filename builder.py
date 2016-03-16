@@ -43,12 +43,14 @@ class BioshadockDaemon(Daemon):
       config_file = "development.ini"
       if "BIOSHADOCK_CONFIG" in os.environ:
           config_file = os.environ["BIOSHADOCK_CONFIG"]
+
       config = ConfigParser.ConfigParser()
       config.readfp(open(config_file))
       logging.config.fileConfig(config_file)
       log = logging.getLogger(__name__)
-      if config.get('app:main','logentries'):
+      if config.has_option('app:main','logentries'):
           log.addHandler(LogentriesHandler(config.get('app:main','logentries')))
+
       log.warn("Starting a builder")
       do_squash = False
       if config.has_option('app:main', 'squash') and config.get('app:main', 'squash') == '1':
@@ -68,7 +70,10 @@ class BioshadockDaemon(Daemon):
                                                 timeout=1800)
               else:
                   BioshadockDaemon.cli = Client(timeout=1800)
-              BioshadockDaemon.cli.login(username=config.get('app:main','push_auth_user'), password=config.get('app:main','push_auth_password'),
+              if config.has_option('app:main', 'registry.push') and config.get('app:main', 'registry.push') == '0':
+                  log.debug('Local docker, not using registry')
+              else:
+                  BioshadockDaemon.cli.login(username=config.get('app:main','push_auth_user'), password=config.get('app:main','push_auth_password'),
                                          email=config.get('app:main','push_auth_email'),registry=config.get('app:main','service'))
 
           build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
@@ -258,22 +263,26 @@ class BioshadockDaemon(Daemon):
                                          "docker", "load", "-i", "squashed.tar"
                                          ])
                           p.wait()
-                      log.debug("Push image "+config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
-                      try:
-                          response = [line for line in BioshadockDaemon.cli.push(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag, stream=True)]
-                          log.debug(str(response))
-                      except Exception as e:
-                          log.error("Failed to push image: " + build['id']+ " "+str(e))
-                          build['status'] = False
-                          build['response'].append("Failed to push to registry")
-                      try:
-                          log.debug("Remove images for " + config.get('app:main', 'service')+"/"+build['id'])
-                          BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
-                          if do_squash:
-                              log.debug("Remove squash image")
-                              BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+":squash")
-                      except Exception as e:
-                          log.error("Failed to remove image " + build['id']+ " "+str(e))
+
+                      if config.has_option('app:main', 'registry.push') and config.get('app:main', 'registry.push') == '0':
+                          log.debug("Skip image push, keep local "+config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                      else:
+                          log.debug("Push image "+config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                          try:
+                              response = [line for line in BioshadockDaemon.cli.push(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag, stream=True)]
+                              log.debug(str(response))
+                          except Exception as e:
+                              log.error("Failed to push image: " + build['id']+ " "+str(e))
+                              build['status'] = False
+                              build['response'].append("Failed to push to registry")
+                          try:
+                              log.debug("Remove images for " + config.get('app:main', 'service')+"/"+build['id'])
+                              BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+orig_build_tag)
+                              if do_squash:
+                                  log.debug("Remove squash image")
+                                  BioshadockDaemon.cli.remove_image(config.get('app:main', 'service')+"/"+build['id']+":squash")
+                          except Exception as e:
+                              log.error("Failed to remove image " + build['id']+ " "+str(e))
 
               else:
                   build['status'] = False
@@ -314,21 +323,24 @@ class BioshadockDaemon(Daemon):
 
 
 if __name__ == "__main__":
-        daemon = BioshadockDaemon('/tmp/godsched.pid')
+    pid_file = "/tmp/bioshadockbuilder.pid"
+    if "BIOSHADOCK_PID" in os.environ:
+        pid_file = os.environ["BIOSHADOCK_PID"]
+    daemon = BioshadockDaemon(pid_file)
 
-        if len(sys.argv) == 2:
-                if 'start' == sys.argv[1]:
-                        daemon.start()
-                elif 'stop' == sys.argv[1]:
-                        daemon.stop()
-                elif 'restart' == sys.argv[1]:
-                        daemon.restart()
-                elif 'run' == sys.argv[1]:
-                        daemon.run()
-                else:
-                        print "Unknown command"
-                        sys.exit(2)
-                sys.exit(0)
+    if len(sys.argv) == 2:
+        if 'start' == sys.argv[1]:
+            daemon.start()
+        elif 'stop' == sys.argv[1]:
+            daemon.stop()
+        elif 'restart' == sys.argv[1]:
+            daemon.restart()
+        elif 'run' == sys.argv[1]:
+            daemon.run()
         else:
-                print "usage: %s start|stop|restart|run" % sys.argv[0]
-                sys.exit(2)
+            print "Unknown command"
+            sys.exit(2)
+        sys.exit(0)
+    else:
+        print "usage: %s start|stop|restart|run" % sys.argv[0]
+        sys.exit(2)
