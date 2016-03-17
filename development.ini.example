@@ -27,10 +27,17 @@ redis_host=127.0.0.1
 redis_port=6379
 elastic_host=127.0.0.1
 
+# Push to a registry
+registry.push = 1
 dockerregistry=https://docker-registry.genouest.org
-secret_passphrase=shuuutt
+secret_passphrase=XXX
 service=docker-registry.genouest.org
 issuer=docker-ui.genouest.org
+
+# For builder
+push_auth_user =
+push_auth_password =
+push_auth_email =
 
 docker_connect=
 
@@ -49,10 +56,10 @@ biotools_url=https://bio.tools
 # Set to 0 if base contributor cannot push to private workspace
 contributor_can_push=1
 
-private_key=/root/certs/wildcard.genouest.org.key
+private_key=
 private_key_passphrase=
-public_key=/root/certs/wildcard.genouest.org.crt.simple
-cacert_der=/root/certs/wildcard.genouest.org.der
+public_key=
+cacert_der=
 
 use_ldap = 0
 ldap.host =

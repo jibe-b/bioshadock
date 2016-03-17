@@ -17,11 +17,17 @@ redis_host=localhost
 redis_port=6379
 elastic_host=localhost
 
+# Push to a registry
+registry.push = 1
 dockerregistry=https://docker-registry.genouest.org
 secret_passphrase=xxxxyyyzzzzz
 service=docker-registry.genouest.org
 issuer=docker-ui.genouest.org
 
+# For builder
+push_auth_user =
+push_auth_password =
+push_auth_email =
 
 # Elixir/bio.tools integration
 elixir_login=
@@ -38,6 +44,7 @@ docker_connect=
 
 admin=
 
+
 # Set to 0 if base contributor cannot push to private workspace
 contributor_can_push=1
 
@@ -50,6 +57,7 @@ use_ldap = 0
 ldap.host =
 ldap.port = 389
 ldap.dn =
+
 
 #social
 endpoint = https://docker-ui.genouest.org/logged_in
