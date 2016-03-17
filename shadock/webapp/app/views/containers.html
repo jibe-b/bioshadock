@@ -36,7 +36,7 @@
                     itemprop="itemListElement"
                     itemscope itemtype="http://schema.org/ListItem">
                 <td itemprop="item" ng-click="show_container(container)" ><span itemprop="name">{{ ::container.id }}</span>
-                    <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">(Automatic build)</span>
+                    <span ng-if="container.meta.git || container.meta.Dockerfile">(Automatic build)</span>
                      <i class="glyphicon glyphicon-chevron-right"></i>
                      <meta itemprop="url" content ="#/container/{{data.id}}"/>
                 </td>

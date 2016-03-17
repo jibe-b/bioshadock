@@ -115,7 +115,7 @@
 <div class="alert alert-info alert-dismissible" role="alert" ng-if="msg">{{msg}}</div>
 
 <div class="row">
- <h3>{{container_status}} | <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">Automatic build</span></h3>
+ <h3>{{container_status}} | <span ng-if="container.meta.git || container.meta.Dockerfile">Automatic build</span></h3>
 </div>
 
 
