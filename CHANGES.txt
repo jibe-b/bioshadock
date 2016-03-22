@@ -2,6 +2,7 @@
 ---
   Implement schema.org in web pages
   Add auto tests at Docker build
+  Add CoreOS Clair integration
 
 0.2
 ---
