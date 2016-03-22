@@ -31,13 +31,16 @@
                 <th>User id</th>
             </tr>
         </thead>
-        <tbody>
-            <tr ng-repeat="container in containers track by container.id">
-                <td ng-click="show_container(container)">{{ ::container.id }}
-                    <span ng-if="container.meta.git!='' || container.meta.Dockerfile!=''">(Automatic build)</span>
+        <tbody itemscope itemtype="http://schema.org/BreadcrumbList">
+            <tr ng-repeat="container in containers track by container.id"
+                    itemprop="itemListElement"
+                    itemscope itemtype="http://schema.org/ListItem">
+                <td itemprop="item" ng-click="show_container(container)" ><span itemprop="name">{{ ::container.id }}</span>
+                    <span ng-if="container.meta.git || container.meta.Dockerfile">(Automatic build)</span>
                      <i class="glyphicon glyphicon-chevron-right"></i>
+                     <meta itemprop="url" content ="#/container/{{data.id}}"/>
                 </td>
-                <td>{{::container.meta.short_description}}</td>
+                <td itemprop="description">{{::container.meta.short_description}}</td>
                 <td>{{::container.user}}</td>
             </tr>
         </tbody>
