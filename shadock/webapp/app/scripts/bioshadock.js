@@ -50,6 +50,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     templateUrl: 'views/dockerbuilds.html',
     controller: 'containerBuildsCtrl'
   })
+  .when('/security/:path*', {
+    templateUrl: 'views/dockersecurity.html',
+    controller: 'containerSecurityCtrl'
+  })
   .when('/login', {
     templateUrl: 'views/login.html',
     controller: 'loginCtrl'
@@ -182,7 +186,32 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     }
 
 })
+.controller('containerSecurityCtrl',
+    function ($scope, $route, $routeParams, $document, $http, $location, Container, Config, Auth) {
+        $scope.container_id = $routeParams.path;
+        $scope.msg = '';
+        var user = Auth.getUser();
+        $scope.user = user;
 
+        $scope.get_security = function(){
+            //Container.get({'id': $scope.container_id}).$promise.then(function(data){
+            $http.get('/container/vulnerabilities/'+$scope.container_id).success(function(data){
+                $scope.vulnerabilities = data;
+            });
+        };
+
+        $scope.get_severity = function(severity) {
+            if(severity=='Medium' || severity=='High') {
+                return 'alert alert-warning';
+            }
+            if(severity=='Critical') {
+                return 'alert alert-danger';
+            }
+            return 'alert alert-info'
+        }
+
+        $scope.get_security()
+})
 
 .controller('containerBuildsCtrl',
     function ($scope, $route, $routeParams, $document, $http, $location, Container, Config, Auth) {
@@ -443,6 +472,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         $scope.go_to_builds = function(){
             location.replace('#/builds/'+$scope.container_id);
+        };
+
+        $scope.go_to_security_checks = function(){
+            location.replace('#/security/'+$scope.container_id);
         };
 
 })

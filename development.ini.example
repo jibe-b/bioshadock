@@ -43,6 +43,10 @@ docker_connect=
 
 admin=
 
+# Clair integration
+clair.use = 0
+clair.host=http://localhost:6060
+
 # Elixir/bio.tools integration
 elixir_login=
 elixir_password=

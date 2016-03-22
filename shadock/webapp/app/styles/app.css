@@ -10,6 +10,14 @@ body { padding-top: 70px; }
     margin-left: 10px;
 }
 
+.vulnerability {
+    margin: 10px;
+}
+
+.vulnerability div {
+    margin-bottom: 10px;
+}
+
 #logo {
     border-top: 1px solid #e2e2e2;
     background: #fff;

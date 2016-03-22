@@ -58,6 +58,9 @@ ldap.host =
 ldap.port = 389
 ldap.dn =
 
+# Clair integration
+clair.use = 0
+clair.host=http://localhost:6060
 
 #social
 endpoint = https://docker-ui.genouest.org/logged_in

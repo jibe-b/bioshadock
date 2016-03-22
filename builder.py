@@ -28,6 +28,8 @@ from git.repo.base import Repo
 
 from logentries import LogentriesHandler
 
+from clair.clair import Clair
+
 requests.packages.urllib3.disable_warnings()
 
 
@@ -40,6 +42,20 @@ class BioshadockDaemon(Daemon):
     def test(self, build, container_id):
         pass
 
+    def analyse_with_clair(self, image_id):
+        self.log.debug('Analyse '+image_id+' with Clair')
+        cfg = {
+            'clair.host': self.config.get('app:main', 'clair.host'),
+            'docker.connect': self.config.get('app:main', 'docker_connect')
+        }
+        clair_analyse = Clair(cfg)
+
+        layers = clair_analyse.analyse(image_id)
+        layer_ids = []
+        for layer in layers:
+            layer_ids.append(layer['id'])
+        return layer_ids
+
     def run(self):
         config_file = "development.ini"
         if "BIOSHADOCK_CONFIG" in os.environ:
@@ -47,8 +63,10 @@ class BioshadockDaemon(Daemon):
 
         config = ConfigParser.ConfigParser()
         config.readfp(open(config_file))
+        self.config = config
         logging.config.fileConfig(config_file)
         log = logging.getLogger(__name__)
+        self.log = log
         if config.has_option('app:main', 'logentries'):
             log.addHandler(
                 LogentriesHandler(config.get('app:main', 'logentries')))
@@ -102,6 +120,8 @@ class BioshadockDaemon(Daemon):
                 description = None
                 size = None
                 labels = []
+                layer_ids = []
+                clair_check = False
 
                 if 'cwl_path' in build and build['cwl_path'] and build['cwl_path'] != 'none':
                     is_cwl = True
@@ -297,6 +317,11 @@ class BioshadockDaemon(Daemon):
                             ])
                             p.wait()
 
+                        if config.has_option('app:main', 'clair.use') and config.get('app:main', 'clair.use') == '1':
+                            clair_check = True
+                            layer_ids = self.analyse_with_clair(config.get('app:main', 'service') + "/" + build['id'] + orig_build_tag)
+
+
                         if config.has_option('app:main', 'registry.push') and config.get('app:main', 'registry.push') == '0':
                             log.debug("Skip image push, keep local " + config.get(
                                 'app:main', 'service') + "/" + build['id'] + orig_build_tag)
@@ -313,6 +338,7 @@ class BioshadockDaemon(Daemon):
                                 build['status'] = False
                                 build['response'].append(
                                     "Failed to push to registry")
+
                             try:
                                 log.debug("Remove images for " + config.get(
                                     'app:main', 'service') + "/" + build['id'])
@@ -342,6 +368,8 @@ class BioshadockDaemon(Daemon):
                              'meta.cwl': cwl,
                              'meta.Entrypoint': entrypoint,
                              'meta.Dockerlabels': labels,
+                             'meta.layers': layer_ids,
+                             'meta.clair': clair_check
                              }
                 log.debug(
                     "Update repository " + build['id'] + ": " + str(meta_info))

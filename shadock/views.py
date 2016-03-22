@@ -16,6 +16,7 @@ import random
 import tempfile
 import os
 import subprocess
+import bcrypt
 
 from bson import json_util
 from bson.json_util import dumps
@@ -38,6 +39,8 @@ from ldap3 import Server, Connection, AUTH_SIMPLE, STRATEGY_SYNC, STRATEGY_ASYNC
 
 from bioshadock_biotools.parser import Parser
 from bioshadock_biotools.biotools import BioTools
+
+from clair.clair import Clair
 
 
 #request.registry.settings['admin']
@@ -674,6 +677,33 @@ def container_update(request):
     del es_repo['builds']
     request.registry.es.index(index="bioshadock", doc_type='container', id=repo_id, body=es_repo)
     return repo
+
+
+@view_config(route_name='container_vulnerabilities', renderer='json', request_method='GET')
+def container_vulnerabilities(request):
+    user = is_logged(request)
+    repo_id = '/'.join(request.matchdict['id'])
+    repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
+    if repo is None:
+        return HTTPNotFound()
+    if not repo['visible']:
+        if user is None:
+            return HTTPForbidden()
+        if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
+            return HTTPForbidden()
+    # Get vulnerabilities from Clair
+    if request.registry.settings['clair.use'] != '1':
+        return HTTPForbidden()
+    cfg = {
+        'clair.host': request.registry.settings['clair.host'],
+        'docker.connect': request.registry.settings['docker_connect']
+
+    }
+    image_vulnerabilities = Clair(cfg)
+    if 'layers' not in repo['meta'] or not repo['meta']['layers']:
+        return []
+    return image_vulnerabilities.get_layers_vulnerabilities(repo['meta']['layers'])
+
 
 @view_config(route_name='container', renderer='json', request_method='GET')
 def container(request):

@@ -1,0 +1,12 @@
+<div class="row" ng-repeat="layer in ::vulnerabilities">
+    <div ng-if="layer.Layer.Features">
+        <h4>Layer: {{layer.Layer.Name}}</h4>
+            <div ng-repeat="feature in ::layer.Layer.Features">
+                    <div class="row vulnerability" ng-repeat="vul in feature.Vulnerabilities">
+                        <div class="col-md-4" ng-class="get_severity(vul.Severity)">{{feature.Name}} - {{vul.Name}}</div>
+                        <div class="col-md-6">{{vul.Description}}</div>
+                        <div class="col-md-2">Fixed by {{vul.FixedBy}}</div>
+                     </div>
+            </div>
+    </div>
+</div>
