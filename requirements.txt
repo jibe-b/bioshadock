@@ -24,3 +24,4 @@ logentries
 requests
 bioshadock_biotools
 clair
+PyYAML

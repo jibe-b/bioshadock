@@ -31,7 +31,8 @@ requires = [
     'bioshadock_biotools',
     'logentries',
     'requests',
-    'clair'
+    'clair',
+    'PyYAML'
     ]
 
 setup(name='shadock',

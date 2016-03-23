@@ -37,4 +37,18 @@ LABEL ANNOT.Name="blast+" \
 <div>Annotations will help integration of your container with external tools/registries (bio.tools, ....) and help user to understand what your container contain. Bioshadock will automatically extract those metadata and show them in the container info page.</div>
 <h2>Automatic builds</h2>
 <div>All builds do not use the Docker cache mechanism, ensuring all data are up-to-dates. The build makes also use of docker-squash to reduce the size of the image, merging the different layers (except the FROM layers) in a single one.</div>
+<h3>Test the container</h3>
+<div>It is possible to provide commands to be executed in container to check the container.</div>
+<div>For automatic tests of the container, one can provide a base64 encoded object in label <strong>bioshadock.tests</strong>. This object is an array of commands to be executed in the container:</div>
+<pre>
+        [ 'test.sh -h', 'test.sh -v' ]
+</pre>
+<div>During the tests, if container comes from a git repository, the Dockerfile directory will be mounted in <strong>/repo</strong> container directory. It is also possible to provide a test.yaml file, in the Dockerfile directory, with yaml format:</div>
+<pre>
+        test:
+            commands:
+                - test.sh -h
+                - test.sh -v
+</pre>
+</div>
 </div>

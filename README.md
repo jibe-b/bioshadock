@@ -45,6 +45,38 @@ Need to also setup registry location to match registry v2. Should in fact specif
     python builder.py start
 
 
+## Automatic builds
+
+The builder.py script builds containers. It will import from Dockerfile all labels in the repository objectid
+
+Example:
+
+    LABEL ANNOT.Name="blast+" \
+      ANNOT.Version="2.2.28" \
+      ANNOT.Description="blast is a ...." \
+      ANNOT.Homepage="http://bioinf.spbau.ru/en/spades" \
+      ANNOT.Reference="['my doi reference']" \
+      ANNOT.Vendor="My institute/company" \
+      ANNOT.EDAM_Operation="['operation_2520', 'operation_0310']" \
+      ANNOT.EDAM_Topic="" \
+      ANNOT.Requires="['boost/1_52_0', 'gcc/4.9.0', 'cmake/2.8.12.2']" \
+      ANNOT.Provides="['dipspades.py', 'spades.py']"
+
+
+For automatic tests of the container, one can provide a base64 encoded object in label bioshadock.tests.
+This object is an array of commands to be executed in the container:
+
+    [ 'test.sh -h', 'test.sh -v' ]
+
+During the tests, if container comes from a git repository, the Dockerfile directory will be mounted in */repo* container directory.
+It is also possible to provide a test.yaml file, in the Dockerfile directory, with yaml format:
+
+    test:
+        commands:
+            - test.sh -h
+            - test.sh -v
+
+
 ## Dev / Debug
 
 For development purpose, one can skip https requirements as well as authentication:

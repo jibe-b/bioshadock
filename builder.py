@@ -20,6 +20,7 @@ import re
 import subprocess
 import tempfile
 import shutil
+import yaml
 from daemon import Daemon
 
 from docker import Client
@@ -256,35 +257,53 @@ class BioshadockDaemon(Daemon):
                                 if label == 'bioshadock.tests':
                                     tests = json.loads(
                                         base64.decode(label_elts))
+                        if not tests and os.path.exists(os.path.join(git_repo_dir, 'test.yaml')):
+                            log.debug('Load test.yaml for ' + build['id'] + 'from git repo')
+                            with open(os.path.join(git_repo_dir, 'test.yaml'), 'r') as ymlfile:
+                                commands = yaml.load(ymlfile)
+                                tests = commands['test']['commands']
                         if tests:
-                            for test in test:
+                            for test in tests:
                                 try:
                                     build['response'].append(
-                                        "Test: " + str(test))
+                                        "Test: " + str(test) + "\n")
                                     log.debug("Execute test for " + config.get(
                                         'app:main', 'service') + "/" + build['id'] + build_tag + ": " + str(test))
-                                    test_container = BioshadockDaemon.cli.create_container(
-                                        image=config.get('app:main', 'service') + "/" + build['id'] + build_tag, command=test)
+
+                                    if git_repo_dir is not None:
+                                        host_config = BioshadockDaemon.cli.create_host_config(binds={
+                                            git_repo_dir: {
+                                                'bind': '/repo',
+                                                'mode': 'rw',
+                                            }
+                                        })
+                                        test_container = BioshadockDaemon.cli.create_container(
+                                            image=config.get('app:main', 'service') + "/" + build['id'] + build_tag, entrypoint=test, host_config=host_config)
+                                    else:
+                                        test_container = BioshadockDaemon.cli.create_container(
+                                            image=config.get('app:main', 'service') + "/" + build['id'] + build_tag, entrypoint=test)
+
                                     response = BioshadockDaemon.cli.start(
                                         container=test_container.get('Id'))
+                                    time.sleep(2)
                                     test_container_inspect = BioshadockDaemon.cli.inspect_container(
                                         test_container.get('Id'))
                                     if test_container_inspect['State']['ExitCode'] != 0:
                                         build['status'] = False
                                         build['response'].append(
-                                            "Test: Failed")
+                                            "Test result: Failed\n")
                                         break
                                     else:
                                         build['response'].append(
-                                            "Test: Success")
+                                            "Test result: Success\n")
 
                                     BioshadockDaemon.cli.remove_container(
                                         container=test_container.get('Id'))
                                 except Exception as e:
                                     log.error("failed to test container " + config.get(
-                                        'app:main', 'service') + "/" + build['id'] + build_tag)
+                                        'app:main', 'service') + "/" + build['id'] + build_tag + ': '+str(e))
                                     build['status'] = False
-                                    build['response'].append("Test: Failed")
+                                    build['response'].append("Test result: Failed\n")
                                     break
                         # p= subprocess.Popen(["docker",
                         #                     "push",
