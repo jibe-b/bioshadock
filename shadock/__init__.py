@@ -91,6 +91,7 @@ def main(global_config, **settings):
     config.add_route('container_metaelixir', '/container/metaelixir/*id')
     config.add_route('container_vulnerabilities', '/container/vulnerabilities/*id')
     config.add_route('container', '/container/*id')
+    config.add_route('clair_notification', '/clair/notify')
     config.add_route('builds', '/builds/*id')
     config.add_route('build', '/build/{id}')
     config.add_route('api_users', '/v1/users/')

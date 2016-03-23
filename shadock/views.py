@@ -679,6 +679,34 @@ def container_update(request):
     return repo
 
 
+@view_config(route_name='clair_notification', renderer='json', request_method='POST')
+def clair_notification(request):
+    '''
+    Receive a Clair notification about an update. Simply delete notification, no handling for the moment
+    '''
+    form = json.loads(request.body, encoding=request.charset)
+    notif = form['Notification']['Name']
+    '''
+    page = 1
+    limit = 100
+    # Get notification
+    loop = True
+    while loop:
+        r = http.request('GET', equest.registry.settings['clair.host']+'/v1/notification/'+notif+'?page='+str(page)+'&limit='+str(limit))
+        if r.status != 200:
+                loop = False
+        res = json.loads(r.data)
+        layers = res['Notification']['New']['LayersIntroducingVulnerability']
+        for layer in layers:
+            # Find repo using layer and udpate notifications
+        page += 1
+    '''
+    # Mark as read
+    http = urllib3.PoolManager()
+    http.request('DELETE', request.registry.settings['clair.host']+'/v1/notification/'+notif)
+    return {}
+
+
 @view_config(route_name='container_vulnerabilities', renderer='json', request_method='GET')
 def container_vulnerabilities(request):
     user = is_logged(request)
