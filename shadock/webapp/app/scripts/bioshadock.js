@@ -192,12 +192,26 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
         $scope.msg = '';
         var user = Auth.getUser();
         $scope.user = user;
+        $scope.tags = [];
+        $scope.msg = 'Loading vulnerabilities';
 
-        $scope.get_security = function(){
+        $scope.get_security = function(version){
+            $scope.version = version;
+            $scope.msg = 'Loading vulnerabilities';
             //Container.get({'id': $scope.container_id}).$promise.then(function(data){
-            $http.get('/container/vulnerabilities/'+$scope.container_id).success(function(data){
-                $scope.vulnerabilities = data;
-            });
+            if(version==null) {
+                // Latest scan
+                $http.get('/container/vulnerabilities/'+$scope.container_id).success(function(data){
+                    $scope.vulnerabilities = data;
+                    $scope.msg = null;
+                }).error(function(){ $scope.msg = 'No scan done for this image'});
+            }
+            else {
+                $http.get('/container/vulnerabilities/'+$scope.container_id+'?version='+version).success(function(data){
+                    $scope.vulnerabilities = data;
+                    $scope.msg = null;
+                }).error(function(){ $scope.msg = 'No scan done for this image'});
+            }
         };
 
         $scope.get_severity = function(severity) {
@@ -210,7 +224,58 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
             return 'alert alert-info'
         }
 
-        $scope.get_security()
+        //$scope.get_security(null);
+
+        Config.get().$promise.then(function(config) {
+            $scope.registry = config['registry'];
+            $scope.service = config['service'];
+            if(user == null) { user = {'id': 'anonymous'}}
+            var req = {
+             method: 'POST',
+             url: '/v2/token/',
+             headers: {
+               'Content-Type': 'application/json'
+             },
+             params: {
+                 'account': user['id'],
+                 'service': $scope.service,
+                 'scope': 'repository:'+$scope.container_id+':manifest'
+             }
+            };
+
+            $http(req).success(function(data, status, headers, config) {
+                var tagsreq = {
+                 method: 'POST',
+                 url: '/container/tags/'+$scope.container_id,
+                 headers: {
+                   'Content-Type': 'application/json'
+                 },
+                 data: {
+                     'token': data.token
+                 }
+                };
+                //Container.tags({'id': $scope.container_id},{'token': data.token}).$promise.then(function(data){
+                $http(tagsreq).success(function(data, status, headers, config) {
+                    $scope.tags = data.tags;
+                    if($scope.tags.length == 0) {
+                        $scope.msg = 'No version available';
+                        return;
+                    }
+                    version = $scope.tags[0];
+                    for(var i=0;i<$scope.tags.length;i++){
+                        if($scope.tags[i] == 'latest') {
+                            version = 'latest';
+                            break;
+                        }
+                    }
+                    $scope.get_security(version);
+
+                });
+            });
+
+        });
+
+
 })
 
 .controller('containerBuildsCtrl',

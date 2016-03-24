@@ -388,6 +388,7 @@ class BioshadockDaemon(Daemon):
                              'meta.Entrypoint': entrypoint,
                              'meta.Dockerlabels': labels,
                              'meta.layers': layer_ids,
+                             'meta.version.'+info_tag.replace('.','_')+'.layers': layer_ids,
                              'meta.clair': clair_check
                              }
                 log.debug(

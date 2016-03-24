@@ -728,9 +728,24 @@ def container_vulnerabilities(request):
 
     }
     image_vulnerabilities = Clair(cfg)
-    if 'layers' not in repo['meta'] or not repo['meta']['layers']:
-        return []
-    return image_vulnerabilities.get_layers_vulnerabilities(repo['meta']['layers'])
+    version = None
+    try:
+        version = request.params['version'].replace('.', '_')
+    except Exception:
+        pass
+    logging.debug('Search vulnerabilities for '+repo_id+':'+str(version))
+    if version is not None:
+        if 'version' in repo['meta'] and version in repo['meta']['version']:
+            layers = repo['meta']['version'][version]['layers']
+        else:
+            return HTTPNotFound()
+    if version is None:
+        if 'layers' not in repo['meta'] or not repo['meta']['layers']:
+            return HTTPNotFound()
+        else:
+            layers = repo['meta']['layers']
+
+    return image_vulnerabilities.get_layers_vulnerabilities(layers)
 
 
 @view_config(route_name='container', renderer='json', request_method='GET')
@@ -812,7 +827,7 @@ def api_repositories_images_layer_access(request):
     Library repo
     /v1/repositories/{namespace}/{image}/layer/{id}/access
     '''
-    print str(request)
+    #print str(request)
     repo_id = str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
     secret = request.registry.settings['secret_passphrase']
     token = None
