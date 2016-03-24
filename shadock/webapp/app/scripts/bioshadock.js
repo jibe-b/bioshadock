@@ -332,6 +332,24 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         $scope.get_container();
 })
+.directive('confirm', [function () {
+        return {
+            priority: 100,
+            restrict: 'A',
+            link: {
+                pre: function (scope, element, attrs) {
+                    var msg = attrs.confirm || "Are you sure?";
+
+                    element.bind('click', function (event) {
+                        if (!confirm(msg)) {
+                            event.stopImmediatePropagation();
+                            event.preventDefault;
+                        }
+                    });
+                }
+            }
+        };
+    }])
 .controller('containerCtrl',
     function ($scope, $route, $routeParams, $document, $http, $location, $modal, Container, Config, Auth) {
         $scope.container_id = $routeParams.path;
@@ -410,7 +428,6 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
                 $http(req).success(function(data, status, headers, config) {
                     $location.path('/');
                 });
-
         };
 
 
