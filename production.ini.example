@@ -12,55 +12,8 @@ pyramid.debug_notfound = false
 pyramid.debug_routematch = false
 pyramid.default_locale_name = en
 
-mongo_url=mongodb://localhost:27017/
-redis_host=localhost
-redis_port=6379
-elastic_host=localhost
+config = config.yaml
 
-# Push to a registry
-registry.push = 1
-dockerregistry=https://docker-registry.genouest.org
-secret_passphrase=xxxxyyyzzzzz
-service=docker-registry.genouest.org
-issuer=docker-ui.genouest.org
-
-# For builder
-push_auth_user =
-push_auth_password =
-push_auth_email =
-
-# Elixir/bio.tools integration
-elixir_login=
-elixir_password=
-elixir_affiliation=
-biotools_url=https://bio.tools
-# template.xml used for conversion
-# https://github.com/fjrmoreews/bioshadock_client/blob/master/registry/template.xml
-elixir_template=
-
-
-# For tcp connection to docker
-docker_connect=
-
-admin=
-
-
-# Set to 0 if base contributor cannot push to private workspace
-contributor_can_push=1
-
-private_key=
-private_key_passphrase=
-public_key=
-cacert_der=
-
-use_ldap = 0
-ldap.host =
-ldap.port = 389
-ldap.dn =
-
-# Clair integration
-clair.use = 0
-clair.host=http://localhost:6060
 
 #social
 endpoint = https://docker-ui.genouest.org/logged_in
@@ -81,19 +34,6 @@ velruse.google.consumer_secret =
 velruse.github.consumer_key =
 velruse.github.consumer_secret =
 
-# Builder
-# Docker login info to push containers
-push_auth_user =
-push_auth_password =
-push_auth_email =
-
-# Squash
-# needs docker-squash installed and in path
-# optionally squash the image
-squash = 0
-# Path to executable
-docker_squash = docker-squash
-
 
 ###
 # wsgi server configuration
@@ -112,10 +52,10 @@ forwarded_allow_ips=*
 ###
 
 [loggers]
-keys = root, shadock
+keys = root
 
 [handlers]
-keys = console, file
+keys = console,file
 
 [formatters]
 keys = generic
@@ -124,21 +64,17 @@ keys = generic
 level = INFO
 handlers = console, file
 
-[logger_shadock]
-level = INFO
-handlers = file
-qualname = shadock
 
 [handler_file]
 class = FileHandler
-args = ('/root/bioshadock.log','a')
+args = ('web.log','a')
 level = INFO
 formatter = generic
 
 [handler_console]
 class = StreamHandler
 args = (sys.stderr,)
-level = NOTSET
+level = INFO
 formatter = generic
 
 [formatter_generic]

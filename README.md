@@ -79,6 +79,10 @@ It is also possible to provide a test.yaml file, in the Dockerfile directory, wi
 
 ## Dev / Debug
 
+
+Configuration is in config.yaml.
+development.ini or production.ini must be configured to link config parameter to the config.yaml path.
+
 For development purpose, one can skip https requirements as well as authentication:
 
     # Allow http

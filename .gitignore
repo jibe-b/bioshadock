@@ -5,6 +5,8 @@
 
 *.pub
 
+*.log
+
 *.pyc
 shadock/*.pyc
 

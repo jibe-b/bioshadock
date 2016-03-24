@@ -43,9 +43,6 @@ from bioshadock_biotools.biotools import BioTools
 from clair.clair import Clair
 
 
-#request.registry.settings['admin']
-#user = request.registry.db_mongo['users'].find_one({'id': user_id})
-
 
 def is_admin(username, request):
     user = request.registry.db_mongo['users'].find_one({'id': username})
@@ -72,7 +69,7 @@ def valid_user(username, password, request):
         if 'type' in user and user['type'] == 'social':
             if user['apikey'] and user['apikey'] == password:
                 return True
-        ldap_dn = request.registry.settings['ldap.dn']
+        ldap_dn = request.registry.config['ldap']['dn']
         base_dn = 'ou=People,' + ldap_dn
         ldapfilter = "(&(|(uid=" + username + ")(mail=" + username + ")))"
         try:
@@ -122,7 +119,7 @@ def is_logged(request):
     if request.authorization is not None:
         try:
             (type, bearer) = request.authorization
-            secret = request.registry.settings['secret_passphrase']
+            secret = request.registry.config['registry']['secret_passphrase']
             # If decode ok and not expired
             user = jwt.decode(bearer, secret, audience='urn:bioshadock/auth')
             return user['user']
@@ -161,9 +158,9 @@ def user(request):
 @view_config(route_name='config', renderer='json', request_method='GET')
 def config(request):
     config = {
-        'registry': request.registry.settings['dockerregistry'],
-        'service': request.registry.settings['service'],
-        'issuer': request.registry.settings['issuer']
+        'registry': request.registry.config['registry']['docker'],
+        'service': request.registry.config['registry']['service'],
+        'issuer': request.registry.config['registry']['issuer']
     }
     return config
 
@@ -185,7 +182,7 @@ def user_bind(request):
     if form and 'token' in form:
         token = form['token']
     if token:
-        secret = request.registry.settings['secret_passphrase']
+        secret = request.registry.config['registry']['secret_passphrase']
         user = jwt.decode(token, secret, audience='urn:bioshadock/auth')
         uid = user['user']['id']
         user = request.registry.db_mongo['users'].find_one({'id': uid})
@@ -205,7 +202,7 @@ def user_bind(request):
     user = request.registry.db_mongo['users'].find_one({'id': uid})
     if not user:
         return HTTPUnauthorized('Invalid credentials')
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     del user['_id']
     token = jwt.encode({'user': user,
                         'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
@@ -357,7 +354,7 @@ def container_manifest(request):
     tag = form['tag']
     http = urllib3.PoolManager()
     headers = {'Authorization': 'Bearer '+token}
-    r = http.request('GET', request.registry.settings['dockerregistry']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
+    r = http.request('GET', request.registry.config['registry']['docker']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
     res = json.loads(r.data)
@@ -369,7 +366,7 @@ def container_metaelixir(request):
     repo_id = '/'.join(request.matchdict['id'])
 
     http = urllib3.PoolManager()
-    r = http.request('GET', request.registry.settings['biotools_url']+'/api/tool/'+repo_id)
+    r = http.request('GET', request.registry.config['elixir']['biotools_url']+'/api/tool/'+repo_id)
     if r.status != 200:
         return Response('could not get the metadata', status_code = r.status)
     return json.loads(r.data)
@@ -382,7 +379,7 @@ def container_elixir(request):
 
     /container/elixir/x/y/z
     '''
-    if not request.registry.settings['elixir_script']:
+    if not request.registry.config['elixir']['script']:
         return HTTPForbidden('Not configured for Elixir updates')
     user = is_logged(request)
     if user is None:
@@ -417,12 +414,12 @@ def container_elixir(request):
 
     try:
         parser = Parser(tmpfilepath)
-        templFile = request.registry.settings['elixir_template']
+        templFile = request.registry.config['elixir']['template']
         if not templFile or not os.path.exists(templFile):
             return HTTPForbidden('Configuration error, missing template.xml')
         parser.parse(templFile, tmpxmlpath)
-        username = request.registry.settings['elixir_login']
-        password = request.registry.settings['elixir_password']
+        username = request.registry.config['elixir']['login']
+        password = request.registry.config['elixir']['password']
         biotools = BioTools({
             act: 'update',
             resFile: tmpxmlpath,
@@ -441,7 +438,7 @@ def container_elixir(request):
     os.remove(tmpfilepath)
     os.remove(tmpxmlpath)
 
-    affiliation = request.registry.settings['elixir_affiliation']
+    affiliation = request.registry.config['elixir']['affiliation']
     elixir_name = affiliation+'/'+softname
     if 'name' in resource and resource['name']:
         elixir_name = affiliation+'/'+resource['name']
@@ -608,7 +605,7 @@ def container_tags(request):
     token = form['token']
     http = urllib3.PoolManager()
     headers = {'Authorization': 'Bearer '+token}
-    r = http.request('GET', request.registry.settings['dockerregistry']+'/v2/'+repo_id+'/tags/list', headers=headers)
+    r = http.request('GET', request.registry.config['services']['docker']['registry']+'/v2/'+repo_id+'/tags/list', headers=headers)
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
     return json.loads(r.data)
@@ -703,7 +700,7 @@ def clair_notification(request):
     '''
     # Mark as read
     http = urllib3.PoolManager()
-    http.request('DELETE', request.registry.settings['clair.host']+'/v1/notification/'+notif)
+    http.request('DELETE', request.registry.config['clair']['host']+'/v1/notification/'+notif)
     return {}
 
 
@@ -720,11 +717,11 @@ def container_vulnerabilities(request):
         if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_pull']['members']:
             return HTTPForbidden()
     # Get vulnerabilities from Clair
-    if request.registry.settings['clair.use'] != '1':
+    if request.registry.config['clair']['use'] != 1:
         return HTTPForbidden()
     cfg = {
-        'clair.host': request.registry.settings['clair.host'],
-        'docker.connect': request.registry.settings['docker_connect']
+        'clair.host': request.registry.config['clair']['host'],
+        'docker.connect': request.registry.config['services']['docker']['connect']
 
     }
     image_vulnerabilities = Clair(cfg)
@@ -829,7 +826,7 @@ def api_repositories_images_layer_access(request):
     '''
     #print str(request)
     repo_id = str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     token = None
     if request.authorization:
         (type, bearer) = request.authorization
@@ -846,8 +843,8 @@ def api_repositories_images_layer_access(request):
 def api_library_delete(request):
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -882,8 +879,8 @@ def api_library_push(request):
     images = json.loads(request.body, encoding=request.charset)
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['docker']['registry']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -921,8 +918,8 @@ def api_library_images(request):
     existing_repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
     if existing_repo is None:
         return HTTPNotFound()
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -949,8 +946,8 @@ def api_library_images_push(request):
     images = json.loads(request.body, encoding=request.charset)
     repo_id = None
     repo_id = 'library/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -973,7 +970,7 @@ def api_library_auth(request):
     /v1/repositories/{image}/auth
     '''
     repo_id = 'library/'+str(request.matchdict['image'])
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     token = None
     if request.authorization:
         (type, bearer) = request.authorization
@@ -1000,7 +997,7 @@ def api_repositories_images(request):
     /v1/repositories/{namespace}/{image}/images
     '''
     repo_id = str(request.matchdict['namespace'])+'/'+str(request.matchdict['image'])
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     token = None
     if request.authorization:
         (type, bearer) = request.authorization
@@ -1028,8 +1025,8 @@ def api_repositories_images_push(request):
     images = json.loads(request.body, encoding=request.charset)
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -1049,8 +1046,8 @@ def api_repositories_images_push(request):
 def api_library_delete(request):
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -1081,7 +1078,7 @@ def api_repositories_auth(request):
     /v1/repositories/{image}/auth
     '''
     repo_id = request.matchdict['namespace'] + '/'+str(request.matchdict['image'])
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     token = None
     if request.authorization:
         (type, bearer) = request.authorization
@@ -1108,8 +1105,8 @@ def api_repositories_push(request):
     images = json.loads(request.body, encoding=request.charset)
     repo_id = None
     repo_id = request.matchdict['namespace'] + '/'+ request.matchdict['image']
-    endpoints = request.registry.settings['dockerregistry']
-    secret = request.registry.settings['secret_passphrase']
+    endpoints = request.registry.config['registry']['docker']
+    secret = request.registry.config['registry']['secret_passphrase']
     username = None
     password= None
     if request.authorization:
@@ -1209,7 +1206,7 @@ def user_can_push(username, repository, request):
             return False
         else:
             # Contributors can push only is specified
-            if user_db['role'] == 'contributor' and request.registry.settings['contributor_can_push'] != "1":
+            if user_db['role'] == 'contributor' and request.registry.config['general']['contributor_can_push'] != 1:
                 return False
             # Visitors cannot push
             if user_db['role'] == 'visitor':
@@ -1288,9 +1285,9 @@ def api2_token(request):
 
         private_key = None
         passphrase = None
-        if request.registry.settings['private_key_passphrase']:
-            passphrase = request.registry.settings['private_key_passphrase']
-        with open(request.registry.settings['private_key'], 'r') as content_file:
+        if request.registry.config['certs']['private_key_passphrase']:
+            passphrase = request.registry.config['certs']['private_key_passphrase']
+        with open(request.registry.config['certs']['private_key'], 'r') as content_file:
             private_key = load_pem_private_key(content_file.read().encode('utf-8'),
                                               password=passphrase, backend=default_backend())
 
@@ -1299,7 +1296,7 @@ def api2_token(request):
         pem = None
         exponent = None
         modulus = None
-        with open(request.registry.settings['public_key'], 'r') as content_file:
+        with open(request.registry.config['certs']['public_key'], 'r') as content_file:
             pub_key = content_file.read().encode('utf-8')
 
             pub_key = load_pem_x509_certificate(pub_key, backend=default_backend())
@@ -1315,7 +1312,7 @@ def api2_token(request):
 
 
         der = None
-        with open(request.registry.settings['cacert_der'], 'rb') as content_file:
+        with open(request.registry.config['certs']['cacert_der'], 'rb') as content_file:
             der = content_file.read()
 
 
@@ -1341,7 +1338,7 @@ def api2_token(request):
                    "actions": allowed_actions
                  }
             ]
-        claims = {'iss': request.registry.settings['issuer'],
+        claims = {'iss': request.registry.config['registry']['issuer'],
                         'sub': username,
                         'aud': service,
                         'access': access,
@@ -1406,13 +1403,13 @@ def ga4gh_tools(request):
         if 'cwl' not in repo['meta']:
             repo['meta']['cwl'] = None
         if 'id' in request.params:
-            if request.params['id'] != str(repo['_id'])+'@'+request.registry.settings['service']:
+            if request.params['id'] != str(repo['_id'])+'@'+request.registry.config['registry']['service']:
                 continue
         if 'registry' in request.params:
-            if request.params['registry'] != request.registry.settings['service']:
+            if request.params['registry'] != request.registry.config['registry']['service']:
                 return []
         if 'organization' in request.params:
-            if request.params['organization'] != request.registry.settings['service']:
+            if request.params['organization'] != request.registry.config['registry']['service']:
                 return []
         if 'name' in request.params:
             if request.params['name'] != repo['id']:
@@ -1427,9 +1424,9 @@ def ga4gh_tools(request):
             if request.params['author'] != repo['user']:
                 continue
         tool = {
-            'id': str(repo['_id'])+'@'+request.registry.settings['service'],
-            'registry': request.registry.settings['service'],
-            'organization': request.registry.settings['service'],
+            'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],
+            'registry': request.registry.config['registry']['service'],
+            'organization': request.registry.config['registry']['service'],
             'name': repo['id'],
             'toolname': toolname,
             #'tooltype': {},
@@ -1438,9 +1435,9 @@ def ga4gh_tools(request):
             'meta-version': 'latest',
             'versions': [{
                 'name': toolname,
-                'id': str(repo['_id'])+'@'+request.registry.settings['service'],
+                'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],
                 'descriptor': { 'descriptor': repo['meta']['cwl'] },
-                'image': request.registry.settings['service'] + '/' + repo['id'],
+                'image': request.registry.config['registry']['service'] + '/' + repo['id'],
                 'dockerfile': repo['meta']['Dockerfile']
             }]
         }
@@ -1472,7 +1469,7 @@ def login_complete_view(request):
         'profile': context.profile,
         'credentials': context.credentials,
     }
-    secret = request.registry.settings['secret_passphrase']
+    secret = request.registry.config['registry']['secret_passphrase']
     token = jwt.encode({'user': result,
                         'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=36000),
                         'aud': 'urn:bioshadock/auth'}, secret)

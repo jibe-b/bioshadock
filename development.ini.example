@@ -22,58 +22,26 @@ pyramid.includes =
 # wsgi server configuration
 ###
 
-mongo_url=mongodb://localhost:27017/
-redis_host=127.0.0.1
-redis_port=6379
-elastic_host=127.0.0.1
+config = config.yaml
 
-# Push to a registry
-registry.push = 1
-dockerregistry=https://docker-registry.genouest.org
-secret_passphrase=XXX
-service=docker-registry.genouest.org
-issuer=docker-ui.genouest.org
+#social
+endpoint = https://docker-ui.genouest.org/logged_in
 
-# For builder
-push_auth_user =
-push_auth_password =
-push_auth_email =
+# Beaker sessions
+session.type = file
+session.data_dir = %(here)s/var/sessions/data
+session.lock_dir = %(here)s/var/sessions/lock
+session.key = bioshadock
+session.secret = ReplaceWithGoodPassword
+session.cookie_on_exception = true
 
-docker_connect=
+# comma separated providers: google,gihub
+allow_auth=
+velruse.google.consumer_key =
+velruse.google.consumer_secret =
 
-admin=
-
-# Clair integration
-clair.use = 0
-clair.host=http://localhost:6060
-
-# Elixir/bio.tools integration
-elixir_login=
-elixir_password=
-elixir_affiliation=
-# template.xml used for conversion
-# https://github.com/fjrmoreews/bioshadock_client/blob/master/registry/template.xml
-elixir_template=
-biotools_url=https://bio.tools
-
-
-# Set to 0 if base contributor cannot push to private workspace
-contributor_can_push=1
-
-private_key=
-private_key_passphrase=
-public_key=
-cacert_der=
-
-use_ldap = 0
-ldap.host =
-ldap.port = 389
-ldap.dn =
-
-# User for builder push
-push_auth_user =
-push_auth_password =
-push_auth_email =
+velruse.github.consumer_key =
+velruse.github.consumer_secret =
 
 
 [server:main]
@@ -87,22 +55,24 @@ port = 6543
 ###
 
 [loggers]
-keys = root, shadock
+keys = root
 
 [handlers]
-keys = console
+keys = console,file
 
 [formatters]
 keys = generic
 
 [logger_root]
-level = INFO
-handlers = console
-
-[logger_shadock]
 level = DEBUG
-handlers = console
-qualname = shadock
+handlers = console, file
+
+
+[handler_file]
+class = FileHandler
+args = ('web.log','a')
+level = INFO
+formatter = generic
 
 [handler_console]
 class = StreamHandler

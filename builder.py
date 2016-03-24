@@ -1,7 +1,6 @@
 import sys
 import signal
 import os
-import ConfigParser
 import time
 from io import BytesIO
 import logging
@@ -46,8 +45,8 @@ class BioshadockDaemon(Daemon):
     def analyse_with_clair(self, image_id):
         self.log.debug('Analyse '+image_id+' with Clair')
         cfg = {
-            'clair.host': self.config.get('app:main', 'clair.host'),
-            'docker.connect': self.config.get('app:main', 'docker_connect')
+            'clair.host': self.config['clair']['host'],
+            'docker.connect': self.config['services']['docker']['connect']
         }
         clair_analyse = Clair(cfg)
 
@@ -58,47 +57,67 @@ class BioshadockDaemon(Daemon):
         return layer_ids
 
     def run(self):
-        config_file = "development.ini"
+        config_file = "config.yaml"
         if "BIOSHADOCK_CONFIG" in os.environ:
             config_file = os.environ["BIOSHADOCK_CONFIG"]
 
+        self.config= None
+        with open(config_file, 'r') as ymlfile:
+            self.config = yaml.load(ymlfile)
+
+        if self.config['log_config'] is not None:
+            for handler in list(self.config['log_config']['handlers'].keys()):
+                self.config['log_config']['handlers'][handler] = dict(self.config['log_config']['handlers'][handler])
+            logging.config.dictConfig(self.config['log_config'])
+        log = logging.getLogger('builder')
+        self.log = log
+
+        '''
         config = ConfigParser.ConfigParser()
         config.readfp(open(config_file))
         self.config = config
         logging.config.fileConfig(config_file)
         log = logging.getLogger(__name__)
         self.log = log
+
+
         if config.has_option('app:main', 'logentries'):
             log.addHandler(
                 LogentriesHandler(config.get('app:main', 'logentries')))
+        '''
 
         log.warn("Starting a builder")
         do_squash = False
-        if config.has_option('app:main', 'squash') and config.get('app:main', 'squash') == '1':
+        if self.config['general']['squash']['use'] == 1:
             do_squash = True
 
         while True:
             log.debug("New build run")
             if BioshadockDaemon.db_mongo is None:
-                mongo = MongoClient(config.get('app:main', 'mongo_url'))
-                BioshadockDaemon.db_mongo = mongo['mydockerhub']
+                mongo = MongoClient(self.config['services']['mongo']['url'])
+                BioshadockDaemon.db_mongo = mongo[self.config['services']['mongo']['db']]
             if BioshadockDaemon.db_redis is None:
                 BioshadockDaemon.db_redis = redis.StrictRedis(
-                    host=config.get('app:main', 'redis_host'), port=int(config.get('app:main', 'redis_port')), db=0)
+                                host=self.config['services']['redis']['host'],
+                                port=self.config['services']['redis']['port'],
+                                db=self.config['services']['redis']['db']
+                                )
             if BioshadockDaemon.cli is None:
-                if config.get('app:main', 'docker_connect'):
+                if self.config['services']['docker']['connect']:
                     BioshadockDaemon.cli = Client(
-                        base_url=config.get('app:main',
-                                            'docker_connect'),
-                                                  timeout=1800)
+                        base_url=self.config['services']['docker']['connect'],
+                        timeout=1800
+                        )
                 else:
                     BioshadockDaemon.cli = Client(timeout=1800)
-                if config.has_option('app:main', 'registry.push') and config.get('app:main', 'registry.push') == '0':
+                if self.config['registry']['push'] == 0:
                     log.debug('Local docker, not using registry')
                 else:
                     BioshadockDaemon.cli.login(
-                        username=config.get('app:main', 'push_auth_user'), password=config.get('app:main', 'push_auth_password'),
-                                           email=config.get('app:main', 'push_auth_email'), registry=config.get('app:main', 'service'))
+                        username=self.config['registry']['auth']['user'],
+                        password=self.config['registry']['auth']['password'],
+                        email=self.config['registry']['auth']['email'],
+                        registry=self.config['registry']['service'])
 
             build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
             dockerfile = None
@@ -208,9 +227,9 @@ class BioshadockDaemon(Daemon):
                     if do_squash:
                         build_tag = ":squash"
                     response = [line for line in BioshadockDaemon.cli.build(
-                        fileobj=f, rm=True, tag=config.get('app:main', 'service') + "/" + build['id'] + build_tag, nocache=True)]
+                        fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True)]
                     container_inspect = BioshadockDaemon.cli.inspect_image(
-                        config.get('app:main', 'service') + "/" + build['id'] + build_tag)
+                        self.config['registry']['service'] + "/" + build['id'] + build_tag)
                 except Exception as e:
                     log.error('Build error: ' + str(e))
 
@@ -236,8 +255,7 @@ class BioshadockDaemon(Daemon):
                         build['image_id'] = matches.group(1)
                         tests = []
                         if container_inspect is not None:
-                            entrypoint = container_inspect[
-                                'Config']['Entrypoint']
+                            entrypoint = container_inspect['Config']['Entrypoint']
                             size = container_inspect['VirtualSize']
                             log.debug(
                                 str(container_inspect['Config']['Labels']))
@@ -267,8 +285,7 @@ class BioshadockDaemon(Daemon):
                                 try:
                                     build['response'].append(
                                         "Test: " + str(test) + "\n")
-                                    log.debug("Execute test for " + config.get(
-                                        'app:main', 'service') + "/" + build['id'] + build_tag + ": " + str(test))
+                                    log.debug("Execute test for " + self.config['registry']['service'] + "/" + build['id'] + build_tag + ": " + str(test))
 
                                     if git_repo_dir is not None:
                                         host_config = BioshadockDaemon.cli.create_host_config(binds={
@@ -278,10 +295,10 @@ class BioshadockDaemon(Daemon):
                                             }
                                         })
                                         test_container = BioshadockDaemon.cli.create_container(
-                                            image=config.get('app:main', 'service') + "/" + build['id'] + build_tag, entrypoint=test, host_config=host_config)
+                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, entrypoint=test, host_config=host_config)
                                     else:
                                         test_container = BioshadockDaemon.cli.create_container(
-                                            image=config.get('app:main', 'service') + "/" + build['id'] + build_tag, entrypoint=test)
+                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, entrypoint=test)
 
                                     response = BioshadockDaemon.cli.start(
                                         container=test_container.get('Id'))
@@ -300,8 +317,7 @@ class BioshadockDaemon(Daemon):
                                     BioshadockDaemon.cli.remove_container(
                                         container=test_container.get('Id'))
                                 except Exception as e:
-                                    log.error("failed to test container " + config.get(
-                                        'app:main', 'service') + "/" + build['id'] + build_tag + ': '+str(e))
+                                    log.error("failed to test container " + self.config['registry']['service'] + "/" + build['id'] + build_tag + ': '+str(e))
                                     build['status'] = False
                                     build['response'].append("Test result: Failed\n")
                                     break
@@ -311,23 +327,21 @@ class BioshadockDaemon(Daemon):
                         # docker save 49b5a7a88d5 | sudo docker-squash -t
                         # jwilder/whoami:squash | docker load
                         if do_squash:
-                            log.debug("Squash image " + config.get(
-                                'app:main', 'service') + "/" + build['id'] + build_tag)
+                            log.debug("Squash image " + self.config['registry']['service'] + "/" + build['id'] + build_tag)
                             log.debug("Save image")
                             p = subprocess.Popen(["docker",
                                                   "save",
                                                   "-o", "image.tar",
-                                                  config.get('app:main', 'service') + "/" + build[
+                                                  self.config['registry']['service'] + "/" + build[
                                                   'id'] + build_tag,
                                                   ])
                             p.wait()
                             log.debug("Squash image")
                             p = subprocess.Popen(
-                                [config.get('app:main', 'docker-squash'),
+                                [self.config['general']['squash']['docker-squash'],
                                  "-i", "image.tar",
                                  "-o", "squashed.tar",
-                                 "-t", config.get('app:main', 'service') + "/" + build[
-                                 'id'] + orig_build_tag,
+                                 "-t", self.config['registry']['service'] + "/" + build['id'] + orig_build_tag,
                                  ])
                             p.wait()
                             log.debug("Reload image")
@@ -336,20 +350,18 @@ class BioshadockDaemon(Daemon):
                             ])
                             p.wait()
 
-                        if config.has_option('app:main', 'clair.use') and config.get('app:main', 'clair.use') == '1':
+                        if self.config['clair']['use'] == 1:
                             clair_check = True
-                            layer_ids = self.analyse_with_clair(config.get('app:main', 'service') + "/" + build['id'] + orig_build_tag)
+                            layer_ids = self.analyse_with_clair(self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
 
 
-                        if config.has_option('app:main', 'registry.push') and config.get('app:main', 'registry.push') == '0':
-                            log.debug("Skip image push, keep local " + config.get(
-                                'app:main', 'service') + "/" + build['id'] + orig_build_tag)
+                        if self.config['registry']['push'] == 1:
+                            log.debug("Skip image push, keep local " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                         else:
-                            log.debug("Push image " + config.get(
-                                'app:main', 'service') + "/" + build['id'] + orig_build_tag)
+                            log.debug("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                             try:
                                 response = [line for line in BioshadockDaemon.cli.push(
-                                    config.get('app:main', 'service') + "/" + build['id'] + orig_build_tag, stream=True)]
+                                    self.config['registry']['service'] + "/" + build['id'] + orig_build_tag, stream=True)]
                                 log.debug(str(response))
                             except Exception as e:
                                 log.error(
@@ -359,14 +371,13 @@ class BioshadockDaemon(Daemon):
                                     "Failed to push to registry")
 
                             try:
-                                log.debug("Remove images for " + config.get(
-                                    'app:main', 'service') + "/" + build['id'])
+                                log.debug("Remove images for " + self.config['registry']['service'] + "/" + build['id'])
                                 BioshadockDaemon.cli.remove_image(
-                                    config.get('app:main', 'service') + "/" + build['id'] + orig_build_tag)
+                                    self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                                 if do_squash:
                                     log.debug("Remove squash image")
                                     BioshadockDaemon.cli.remove_image(
-                                        config.get('app:main', 'service') + "/" + build['id'] + ":squash")
+                                        self.config['registry']['service'] + "/" + build['id'] + ":squash")
                             except Exception as e:
                                 log.error(
                                     "Failed to remove image " + build['id'] + " " + str(e))

@@ -15,7 +15,9 @@ from bson.objectid import ObjectId
 import redis
 from elasticsearch import Elasticsearch
 import logging
+import logging.config
 import os
+import yaml
 
 
 def main(global_config, **settings):
@@ -35,27 +37,46 @@ def main(global_config, **settings):
     my_session_factory = session_factory_from_settings(settings)
     config.set_session_factory(my_session_factory)
 
-    mongo = MongoClient(config.registry.settings['mongo_url'])
-    dbmongo = mongo['mydockerhub']
+    yaml_config= None
+    try:
+        with open(config.registry.settings['config'], 'r') as ymlfile:
+            yaml_config = yaml.load(ymlfile)
+            if yaml_config['log_config'] is not None:
+                for handler in list(yaml_config['log_config']['handlers'].keys()):
+                    yaml_config['log_config']['handlers'][handler] = dict(yaml_config['log_config']['handlers'][handler])
+                logging.config.dictConfig(yaml_config['log_config'])
+    except Exception as e:
+        logging.error('No config file found or declared: '+str(e))
+
+    logging.warn('Start bioshadock web server')
+
+    config.registry.config = yaml_config
+
+    mongo = MongoClient(yaml_config['services']['mongo']['url'])
+    dbmongo = mongo[yaml_config['services']['mongo']['db']]
     config.registry.db_mongo = dbmongo
 
-    r = redis.StrictRedis(host=config.registry.settings['redis_host'], port=int(config.registry.settings['redis_port']), db=0)
+    r = redis.StrictRedis(
+                    host=yaml_config['services']['redis']['host'],
+                    port=yaml_config['services']['redis']['port'],
+                    db=yaml_config['services']['redis']['db']
+                    )
     config.registry.db_redis = r
 
-    config.registry.admin = config.registry.settings['admin'].split(',')
+    config.registry.admin = yaml_config['general']['admin'].split(',')
 
-    config.registry.es = Elasticsearch(config.registry.settings['elastic_host'].split(','))
+    config.registry.es = Elasticsearch(yaml_config['services']['elastic']['host'].split(','))
 
     config.registry.ldap_server = None
     config.registry.con = None
-    if config.registry.settings['use_ldap'] == '1':
+    if yaml_config['ldap']['use'] == 1:
         # Check if in ldap
         #import ldap
         from ldap3 import Server, Connection, AUTH_SIMPLE, STRATEGY_SYNC, STRATEGY_ASYNC_THREADED, SEARCH_SCOPE_WHOLE_SUBTREE, GET_ALL_INFO
         try:
-            ldap_host = config.registry.settings['ldap.host']
-            ldap_port = config.registry.settings['ldap.port']
-            config.registry.ldap_server = Server(ldap_host, port=int(ldap_port), get_info=GET_ALL_INFO)
+            ldap_host = yaml_config['ldap']['host']
+            ldap_port = yaml_config['ldap']['port']
+            config.registry.ldap_server = Server(ldap_host, port=ldap_port, get_info=GET_ALL_INFO)
         except Exception as err:
             logging.error(str(err))
             sys.exit(1)

@@ -1,0 +1,90 @@
+general:
+    admin: 'osallou' # comma separated list of users
+    # Set to 0 if base contributor cannot push to private workspace
+    contributor_can_push: 1
+    squash:
+        use: 0
+        docker-squash: 'docker-squash' # name or path to docker-squash binary
+
+services:
+    mongo:
+        url: 'mongodb://localhost:27017/'
+        db: 'mydockerhub'
+    redis:
+        host: 'localhost'
+        port: 6379
+        db: 0
+    elastic:
+        host: 'localhost'
+    docker:
+        connect: 'tcp://127.0.0.1:2375' # tcp://127.0.0.1:2375 or null for socks
+
+registry:
+    push: 0
+    auth:
+        user: null
+        password: null
+        email: null
+    docker: null
+    secret_passphrase: 'thisismysecret'
+    service: 'docker-registry.genouest.org'
+    issuer: 'docker-ui.genouest.org'
+
+
+clair:
+    use: 1
+    host: 'http://localhost:6060'
+
+certs:
+    private_key: null
+    private_key_passphrase: null
+    public_key: null
+    cacert_der: null
+
+ldap:
+    use: 0
+    host: null
+    port: null
+    dn: null
+
+elixir:
+    login: null
+    password: null
+    affiliation: null
+    template: null
+    script: null
+    biotools_url: 'https://bio.tools'
+
+# Logging ##################################
+log_config:
+    'version': 1
+    'formatters':
+        'generic':
+            'format': '%(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s'
+    'handlers':
+        'console':
+            'class': 'logging.StreamHandler'
+            'formatter': 'generic'
+            'level': 'DEBUG'
+        'builder':
+            'class': 'logging.FileHandler'
+            'filename': 'builder.log'
+            'formatter': 'generic'
+            'level': 'DEBUG'
+        'gelf':
+            'class': 'graypy.GELFHandler'
+            'host': 'localhost'
+            'port':  12201
+            'formatter': 'generic'
+            'level': 'INFO'
+    'loggers':
+        'root':
+            'level': 'DEBUG'
+            'handlers':
+                - 'console'
+        'builder':
+            'level': 'DEBUG'
+            'handlers':
+                - 'console'
+                - 'builder'
+    'disable_existing_loggers': False
