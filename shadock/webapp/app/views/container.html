@@ -124,7 +124,7 @@
 <div class="row">
     <meta itemprop="applicationCategory" content ="container"/>
     <meta itemprop="applicationSubCategory" content ="docker"/>
-    <h2><span itemprop="name">{{container.id}} <i ng-if="container.meta.clair" class="glyphicon glyphicon-fire" data-toggle="tooltip" data-placement="top" title="Scanned for security"> </i></span>
+    <h2><span itemprop="name">{{container.id}} <i style="color: red;" ng-if="container.meta.clair" class="fa fa-shield" data-toggle="tooltip" data-placement="top" title="Scanned for security"> </i></span>
         <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span>
         <span class="dropdown">
               <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -132,11 +132,10 @@
                 <span class="caret"></span>
               </button>
               <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
-                <li ng-if="container.meta.clair"><a ng-href="#/security/{{container_id}}">Security</a></li>
                 <li><a ng-href="#/dockerfile/{{container_id}}">Dockerfile</a></li>
+                <li ng-if="container.meta.clair"><a ng-href="#/security/{{container_id}}">Security</a></li>
                 <li role="separator" class="divider"></li>
                 <li  ng-if="container.user_can_push"><a ng-href="#/builds/{{container_id}}">Builds</a></li>
-                <li><a ng-href="#/security/{{container_id}}">Security</a></li>
               </ul>
         </span>
     </h2>
