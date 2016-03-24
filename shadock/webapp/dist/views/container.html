@@ -124,12 +124,23 @@
 <div class="row">
     <meta itemprop="applicationCategory" content ="container"/>
     <meta itemprop="applicationSubCategory" content ="docker"/>
-    <h2><span itemprop="name">{{container.id}} <i ng-if="container.meta.clair" class="glyphicon glyphicon-fire"> </i></span>
-        <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span></h2>
-        <span class="pull-right" ng-if="container.meta.clair"><button class="btn btn-primary btn-action" ng-click="go_to_security_checks()">Security</button></span></h2>
-        <span class="pull-right"><button class="btn btn-primary btn-action" ng-click="go_to_dockerfile()">Dockerfile</button></span>
-        <span class="pull-right"><button class="btn btn-primary btn-action" ng-if="container.user_can_push" ng-click="go_to_builds()">Builds</button></span>
-        <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger btn-action" ng-click="delete_container()">Delete</button></span></h2>
+    <h2><span itemprop="name">{{container.id}} <i style="color: red;" ng-if="container.meta.clair" class="fa fa-shield" data-toggle="tooltip" data-placement="top" title="Scanned for security"> </i></span>
+        <span ng-if="container.user_can_push"><button class="btn btn-warning btn-action" ng-click="settings()"><i class="glyphicon glyphicon-cog" aria-hidden="true"></i> Settings</button></span>
+        <span class="dropdown">
+              <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                More info
+                <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">
+                <li><a ng-href="#/dockerfile/{{container_id}}">Dockerfile</a></li>
+                <li ng-if="container.meta.clair"><a ng-href="#/security/{{container_id}}">Security</a></li>
+                <li role="separator" class="divider"></li>
+                <li  ng-if="container.user_can_push"><a ng-href="#/builds/{{container_id}}">Builds</a></li>
+              </ul>
+        </span>
+    </h2>
+        <span class="pull-right" ng-if="container.user_can_push"><button class="btn btn-danger btn-action"  confirm="Delete container?" ng-click="delete_container()">Delete</button></span></h2>
+
         <div><i class="glyphicon glyphicon-download"> </i> <span>{{container.pulls || 0}}</span>  <span ng-if="container.meta.last_updated"> - Last pushed: {{ convert_timestamp_to_date(container.meta.last_updated)}}</span></div>
 </div>
 <div class="alert alert-info" role="alert">
