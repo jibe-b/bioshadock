@@ -2,7 +2,7 @@
 *.der
 *.csr
 *.pem
-
+config.yaml
 *.pub
 
 *.log
