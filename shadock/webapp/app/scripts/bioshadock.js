@@ -275,6 +275,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
         });
 
+        $scope.go_to_container = function(){
+            location.replace('#/container/'+$scope.container_id);
+        };
+
 
 })
 
