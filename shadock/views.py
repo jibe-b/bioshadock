@@ -605,7 +605,7 @@ def container_tags(request):
     token = form['token']
     http = urllib3.PoolManager()
     headers = {'Authorization': 'Bearer '+token}
-    r = http.request('GET', request.registry.config['services']['docker']['registry']+'/v2/'+repo_id+'/tags/list', headers=headers)
+    r = http.request('GET', request.registry.config['registry']['service']+'/v2/'+repo_id+'/tags/list', headers=headers)
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
     return json.loads(r.data)
