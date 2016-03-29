@@ -268,7 +268,7 @@ class BioshadockDaemon(Daemon):
                                     try:
                                         label_elts = json.loads(label_elts)
                                     except Exception as e:
-                                        log.info(
+                                        log.debug(
                                             "Failed to decode JSON for " + str(build['id']) + ": " + str(label))
                                 labels.append(
                                     {label.replace('.', '_'): label_elts})
