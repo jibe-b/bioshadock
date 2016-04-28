@@ -36,7 +36,7 @@ requires = [
     ]
 
 setup(name='shadock',
-      version='0.3',
+      version='0.4',
       description='shadock',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[

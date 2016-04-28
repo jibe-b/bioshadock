@@ -1,3 +1,7 @@
+0.4
+---
+  Fixes and debug logs
+
 0.3
 ---
   Implement schema.org in web pages

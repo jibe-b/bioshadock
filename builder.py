@@ -154,6 +154,8 @@ class BioshadockDaemon(Daemon):
                         except Exception as e:
                             log.error(
                                 'Could not get CWL: ' + str(build['cwl_path']) + " " + str(e))
+
+                git_repo_dir = None
                 if gitrepo is not None and gitrepo and gitrepo != 'none':
                     # dockerfile
                     git_repo_dir = tempfile.mkdtemp(suffix='.git')
@@ -275,7 +277,7 @@ class BioshadockDaemon(Daemon):
                                 if label == 'bioshadock.tests':
                                     tests = json.loads(
                                         base64.decode(label_elts))
-                        if not tests and os.path.exists(os.path.join(git_repo_dir, 'test.yaml')):
+                        if not tests and git_repo_dir and os.path.exists(os.path.join(git_repo_dir, 'test.yaml')):
                             log.debug('Load test.yaml for ' + build['id'] + 'from git repo')
                             with open(os.path.join(git_repo_dir, 'test.yaml'), 'r') as ymlfile:
                                 commands = yaml.load(ymlfile)
@@ -329,9 +331,13 @@ class BioshadockDaemon(Daemon):
                         if do_squash:
                             log.debug("Squash image " + self.config['registry']['service'] + "/" + build['id'] + build_tag)
                             log.debug("Save image")
+                            (squash_image_handler, squash_image_file) = tempfile.mkstemp(suffix='.squash.tar')
+                            (squashed_image_handler, squashed_image_file) = tempfile.mkstemp(suffix='.squashed.tar')
+
                             p = subprocess.Popen(["docker",
                                                   "save",
-                                                  "-o", "image.tar",
+                                                  #"-o", "image.tar",
+                                                  '-o', squash_image_file,
                                                   self.config['registry']['service'] + "/" + build[
                                                   'id'] + build_tag,
                                                   ])
@@ -339,24 +345,40 @@ class BioshadockDaemon(Daemon):
                             log.debug("Squash image")
                             p = subprocess.Popen(
                                 [self.config['general']['squash']['docker-squash'],
-                                 "-i", "image.tar",
-                                 "-o", "squashed.tar",
+                                 #"-i", "image.tar",
+                                 "-i", squash_image_file,
+                                 #"-o", "squashed.tar",
+                                 "-o", squashed_image_file,
                                  "-t", self.config['registry']['service'] + "/" + build['id'] + orig_build_tag,
                                  ])
                             p.wait()
                             log.debug("Reload image")
                             p = subprocess.Popen([
-                                "docker", "load", "-i", "squashed.tar"
+                                "docker", "load", "-i", squashed_image_file
+                                 #"docker", "load", "-i", "squashed.tar"
                             ])
                             p.wait()
+                            if os.path.exists(squash_image_file):
+                                os.remove(squash_image_file)
+                            if os.path.exists(squashed_image_file):
+                                os.remove(squashed_image_file)
 
                         if self.config['clair']['use'] == 1:
+                            log.debug('Analyse with Clair')
                             clair_check = True
                             layer_ids = self.analyse_with_clair(self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
 
 
-                        if self.config['registry']['push'] == 1:
+                        if self.config['registry']['push'] == 0:
                             log.debug("Skip image push, keep local " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
+                            try:
+                                if do_squash:
+                                    log.debug("Remove squash image")
+                                    BioshadockDaemon.cli.remove_image(
+                                        self.config['registry']['service'] + "/" + build['id'] + ":squash")
+                            except Exception as e:
+                                log.error(
+                                    "Failed to remove image " + build['id'] + " " + str(e))
                         else:
                             log.debug("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                             try:
@@ -372,12 +394,12 @@ class BioshadockDaemon(Daemon):
 
                             try:
                                 log.debug("Remove images for " + self.config['registry']['service'] + "/" + build['id'])
-                                BioshadockDaemon.cli.remove_image(
-                                    self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                                 if do_squash:
                                     log.debug("Remove squash image")
                                     BioshadockDaemon.cli.remove_image(
                                         self.config['registry']['service'] + "/" + build['id'] + ":squash")
+                                BioshadockDaemon.cli.remove_image(
+                                    self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                             except Exception as e:
                                 log.error(
                                     "Failed to remove image " + build['id'] + " " + str(e))
