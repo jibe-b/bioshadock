@@ -92,6 +92,9 @@ class BioshadockDaemon(Daemon):
             do_squash = True
 
         while True:
+            if os.path.exists('/tmp/bioshadocker-builder.stop'):
+                log.warn('Request to exit: /tmp/bioshadocker-builder.stop')
+                break
             log.debug("New build run")
             if BioshadockDaemon.db_mongo is None:
                 mongo = MongoClient(self.config['services']['mongo']['url'])
@@ -384,14 +387,14 @@ class BioshadockDaemon(Daemon):
                             try:
                                 response = [line for line in BioshadockDaemon.cli.push(
                                     self.config['registry']['service'] + "/" + build['id'] + orig_build_tag, stream=True)]
-                                log.debug(str(response))
+                                #log.debug(str(response))
+                                log.info('Pushed to registry: ' + str(build['id']))
                             except Exception as e:
                                 log.error(
                                     "Failed to push image: " + build['id'] + " " + str(e))
                                 build['status'] = False
                                 build['response'].append(
                                     "Failed to push to registry")
-
                             try:
                                 log.debug("Remove images for " + self.config['registry']['service'] + "/" + build['id'])
                                 if do_squash:
