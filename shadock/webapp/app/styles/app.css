@@ -14,6 +14,10 @@ body { padding-top: 70px; }
     margin: 10px;
 }
 
+.panel-body ul {
+    word-break: break-word;
+}
+
 .vulnerability div {
     margin-bottom: 10px;
 }
