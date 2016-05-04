@@ -1262,17 +1262,19 @@ def api2_token(request):
     except Exception:
         pass
     service = request.params['service']
-    scope = None
+    scopes = None
     try:
-        scope = request.params['scope']
+        #scope = request.params['scope']
+        scopes = request.GET.getall('scope')
     except Exception:
         pass
+
     if request.authorization or request.authorization is None:
         # Login request
         if request.authorization is None:
             account = 'anonymous'
         if account != 'anonymous' and not is_logged(request):
-            (type, bearer) = request.authorization
+            (bearer_type, bearer) = request.authorization
             username, password = decode(bearer)
             if username == 'anonymous':
                 username = account
@@ -1317,27 +1319,28 @@ def api2_token(request):
 
 
         access = []
-        if scope is not None:
-            scope = scope.split(':')
-            type = scope[0]
-            repository = scope[1]
-            actions = scope[2].split(',')
-            allowed_actions = []
-            for action in actions:
-                if action == 'push' and user_can_push(username, repository, request):
-                    allowed_actions.append(action)
-                if action == 'pull' and user_can_pull(username, repository, request):
-                    allowed_actions.append(action)
-                    request.registry.db_mongo['repository'].update({'id': repository},{"$inc": { "pulls": 1}})
-                if action == 'manifest' and user_can_pull(username, repository, request):
-                    allowed_actions.append('pull')
-            access = [
-                 {
-                   "type": type,
-                   "name": repository,
-                   "actions": allowed_actions
-                 }
-            ]
+        if scopes is not None:
+            access = []
+            for scope in scopes:
+                scope = scope.split(':')
+                repo_type = scope[0]
+                repository = scope[1]
+                actions = scope[2].split(',')
+                allowed_actions = []
+                for action in actions:
+                    if action == 'push' and user_can_push(username, repository, request):
+                        allowed_actions.append(action)
+                    if action == 'pull' and user_can_pull(username, repository, request):
+                        allowed_actions.append(action)
+                        request.registry.db_mongo['repository'].update({'id': repository},{"$inc": { "pulls": 1}})
+                    if action == 'manifest' and user_can_pull(username, repository, request):
+                        allowed_actions.append('pull')
+                access.append({
+                  "type": repo_type,
+                  "name": repository,
+                  "actions": allowed_actions
+                })
+
         claims = {'iss': request.registry.config['registry']['issuer'],
                         'sub': username,
                         'aud': service,

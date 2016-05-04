@@ -1,6 +1,7 @@
 0.5
 ---
   Request builder process to stop if file /tmp/bioshadocker-builder.stop is present
+  Fix scope mngt for api2_token to manage multiple scopes
 
 0.4
 ---
