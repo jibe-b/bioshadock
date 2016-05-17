@@ -38,6 +38,7 @@ class BioshadockDaemon(Daemon):
     db_mongo = None
     db_redis = None
     cli = None
+    run_once = False
 
     def test(self, build, container_id):
         pass
@@ -106,13 +107,16 @@ class BioshadockDaemon(Daemon):
                                 db=self.config['services']['redis']['db']
                                 )
             if BioshadockDaemon.cli is None:
+                timeout=1800
+                if self.config['services']['docker']['timeout']:
+                    timeout = self.config['services']['docker']['timeout']
                 if self.config['services']['docker']['connect']:
                     BioshadockDaemon.cli = Client(
                         base_url=self.config['services']['docker']['connect'],
-                        timeout=1800
+                        timeout=timeout
                         )
                 else:
-                    BioshadockDaemon.cli = Client(timeout=1800)
+                    BioshadockDaemon.cli = Client(timeout=timeout)
                 if self.config['registry']['push'] == 0:
                     log.debug('Local docker, not using registry')
                 else:
@@ -449,6 +453,8 @@ class BioshadockDaemon(Daemon):
                     log.debug(
                         "Cleaning directory " + cur_dir + " => " + git_repo_dir)
                     shutil.rmtree(git_repo_dir)
+            if self.run_once:
+                break
             time.sleep(2)
 
 
@@ -467,10 +473,13 @@ if __name__ == "__main__":
             daemon.restart()
         elif 'run' == sys.argv[1]:
             daemon.run()
+        elif 'once' == sys.argv[1]:
+            daemon.run_once = True
+            daemon.run()
         else:
             print "Unknown command"
             sys.exit(2)
         sys.exit(0)
     else:
-        print "usage: %s start|stop|restart|run" % sys.argv[0]
+        print "usage: %s start|stop|restart|run|once" % sys.argv[0]
         sys.exit(2)
