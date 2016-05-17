@@ -353,13 +353,20 @@ def container_manifest(request):
     token = form['token']
     tag = form['tag']
     http = urllib3.PoolManager()
-    headers = {'Authorization': 'Bearer '+token}
+    headers = {'Authorization': 'Bearer '+token,
+                'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
     r = http.request('GET', request.registry.config['registry']['docker']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
     if r.status != 200:
         return Response('could not get the manifest', status_code = r.status)
     res = json.loads(r.data)
-    res['Docker-Content-Digest'] = r.headers['Docker-Content-Digest']
+    docker_content_digest = None
+    if 'Docker-Content-Digest' in r.headers:
+        docker_content_digest = r.headers['Docker-Content-Digest']
+    else:
+        docker_content_digest = res['manifests'][0]['digest']
+    res['Docker-Content-Digest'] = docker_content_digest
     return res
+
 
 @view_config(route_name='container_metaelixir', renderer='json')
 def container_metaelixir(request):
@@ -622,6 +629,28 @@ def container_delete(request):
         return HTTPNotFound()
     if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
         return HTTPForbidden()
+    # Get digest from manifest Docker-Content-Digest sha256:95b09cb5b7cd38d73a7dc9618c34148559cf1ed3a0066c85d37e1d6cf4fb9004
+    # Send DELETE request DELETE /v2/<name>/manifests/<reference>
+    form = json.loads(request.body, encoding=request.charset)
+    token = form['token']
+    tag = 'latest'
+    http = urllib3.PoolManager()
+    headers = {'Authorization': 'Bearer '+token,
+                'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
+    r = http.request('GET', request.registry.config['registry']['docker']+'/v2/'+repo_id+'/manifests/'+tag, headers=headers)
+    if r.status == 404:
+        logging.warn('Registry could not get the manifest '+repo_id)
+    else:
+        res = json.loads(r.data)
+        docker_content_digest = None
+        if 'Docker-Content-Digest' in r.headers:
+            docker_content_digest = r.headers['Docker-Content-Digest']
+        else:
+            docker_content_digest = res['manifests'][0]['digest']
+        r = http.request('DELETE', request.registry.config['registry']['docker']+'/v2/'+repo_id+'/manifests/'+docker_content_digest, headers=headers)
+        if r.status != 202:
+            logging.error('Could not find or delete image ' + repo_id + 'in registry')
+
     request.registry.db_mongo['repository'].remove({'id': repo_id})
     request.registry.es.delete(index="bioshadock", doc_type='container', id=repo_id)
     return repo
