@@ -422,16 +422,35 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 
 
         $scope.delete_container = function(){
+            if(user == null) { user = {'id': 'anonymous'}}
+            var req = {
+             method: 'POST',
+             url: '/v2/token/',
+             headers: {
+               'Content-Type': 'application/json'
+             },
+             params: {
+                 'account': user['id'],
+                 'service': $scope.service,
+                 'scope': 'repository:'+$scope.container_id+':manifest'
+             }
+            };
+            $http(req).success(function(data, status, headers, config) {
                 var req = {
                  method: 'DELETE',
                  url: '/container/'+$scope.container_id,
                  headers: {
                    'Content-Type': 'application/json'
+                    },
+                 data: {
+                     token: data.token
                  }
                 };
                 $http(req).success(function(data, status, headers, config) {
                     $location.path('/');
                 });
+            });
+
         };
 
 
@@ -611,8 +630,10 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 })
 .controller('allcontainersCtrl',
     function ($scope, $route, Container) {
+        $scope.msg = "Loading containers...."
         Container.query_all().$promise.then(function(data) {
             $scope.containers = data;
+            $scope.msg = null;
         });
         $scope.show_container = function(data) {
              location.replace('#/container/'+data.id);
