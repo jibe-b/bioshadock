@@ -335,7 +335,7 @@ class BioshadockDaemon(Daemon):
                         #                     config.get('app:main', 'service')+"/"+build['id']])
                         # docker save 49b5a7a88d5 | sudo docker-squash -t
                         # jwilder/whoami:squash | docker load
-                        if do_squash:
+                        if do_squash and build['status']:
                             log.debug("Squash image " + self.config['registry']['service'] + "/" + build['id'] + build_tag)
                             log.debug("Save image")
                             (squash_image_handler, squash_image_file) = tempfile.mkstemp(suffix='.squash.tar')
@@ -370,7 +370,7 @@ class BioshadockDaemon(Daemon):
                             if os.path.exists(squashed_image_file):
                                 os.remove(squashed_image_file)
 
-                        if self.config['clair']['use'] == 1:
+                        if build['status'] and self.config['clair']['use'] == 1:
                             log.debug('Analyse with Clair')
                             clair_check = True
                             layer_ids = self.analyse_with_clair(self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
@@ -387,18 +387,17 @@ class BioshadockDaemon(Daemon):
                                 log.error(
                                     "Failed to remove image " + build['id'] + " " + str(e))
                         else:
-                            log.debug("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
-                            try:
-                                response = [line for line in BioshadockDaemon.cli.push(
-                                    self.config['registry']['service'] + "/" + build['id'] + orig_build_tag, stream=True)]
-                                #log.debug(str(response))
-                                log.info('Pushed to registry: ' + str(build['id']))
-                            except Exception as e:
-                                log.error(
-                                    "Failed to push image: " + build['id'] + " " + str(e))
-                                build['status'] = False
-                                build['response'].append(
-                                    "Failed to push to registry")
+                            if build['status']:
+                                log.debug("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
+                                try:
+                                    response = [line for line in BioshadockDaemon.cli.push(
+                                        self.config['registry']['service'] + "/" + build['id'] + orig_build_tag, stream=True)]
+                                except Exception as e:
+                                    log.error(
+                                        "Failed to push image: " + build['id'] + " " + str(e))
+                                    build['status'] = False
+                                    build['response'].append(
+                                        "Failed to push to registry")
                             try:
                                 log.debug("Remove images for " + self.config['registry']['service'] + "/" + build['id'])
                                 if do_squash:
