@@ -283,7 +283,7 @@ class BioshadockDaemon(Daemon):
                                     {label.replace('.', '_'): label_elts})
                                 if label == 'bioshadock.tests':
                                     tests = json.loads(
-                                        base64.decode(label_elts))
+                                        base64.decodestring(label_elts))
                         if not tests and git_repo_dir and os.path.exists(os.path.join(git_repo_dir, 'test.yaml')):
                             log.debug('Load test.yaml for ' + build['id'] + 'from git repo')
                             with open(os.path.join(git_repo_dir, 'test.yaml'), 'r') as ymlfile:
