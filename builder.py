@@ -227,7 +227,7 @@ class BioshadockDaemon(Daemon):
                 if 'tag' in build and build['tag']:
                     build_tag = ':' + build['tag']
                     info_tag = build['tag']
-                log.warn('Build: ' + str(build['id']))
+                log.warn('Build: ' + str(build['id']) + ':' + str(info_tag))
 
                 response = None
                 container_inspect = None
@@ -435,8 +435,8 @@ class BioshadockDaemon(Daemon):
                 if description is not None:
                     meta_info['meta.docker_description'] = description
                 if size is not None:
-                    meta_info['meta.docker_tags.' + info_tag] = {
-                        'size': int(size), 'last_updated': timestamp}
+                    meta_info['meta.docker_tags.' + info_tag.replace('.','_')] = {
+                        'size': int(size), 'last_updated': timestamp, 'tag': info_tag}
                 if build['status']:
                     meta_info['meta.last_updated'] = timestamp
                     meta_info['meta.built'] = True

@@ -209,7 +209,7 @@
                     <div class="panel-heading">Docker tags</div>
                     <div class="panel-body">
                         <div ng-repeat="tag in tags">
-                            <i class="glyphicon glyphicon-tag"></i> <span itemprop="softwareVersion">{{tag}}</span> <span ng-if="container.meta.docker_tags[tag]"> - <span itemprop="fileSize">{{formatSizeUnits(container.meta.docker_tags[tag].size)}}</span> - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag].last_updated)}}</span>
+                            <i class="glyphicon glyphicon-tag"></i> <span itemprop="softwareVersion">{{tag}}</span> <span ng-if="container.meta.docker_tags[tag.split('.').join('_')]"> - <span itemprop="fileSize">{{formatSizeUnits(container.meta.docker_tags[tag.split('.').join('_')].size)}}</span> - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag.split('.').join('_')].last_updated)}}</span>
                         </div>
                     </div>
                 </div>

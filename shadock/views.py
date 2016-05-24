@@ -488,7 +488,7 @@ def container_tag(request):
     user_id = user['id']
 
     container = request.registry.db_mongo['repository'].find_one({'id': repo_id})
-    if 'git' not in container['meta']:
+    if 'git' not in container['meta'] and not container['meta']['Dockerfile']:
         return HTTPForbidden()
 
     build = request.registry.db_mongo['builds'].insert({'id': repo_id,
@@ -499,11 +499,14 @@ def container_tag(request):
         'build': str(build),
         'date': datetime.datetime.now(),
         'dockerfile': container['meta']['Dockerfile'],
-        'git': container['meta']['git'],
+        'git': None,
         'cwl_path': container['meta']['cwl_path'],
         'user': user_id,
         'tag': tag
     }
+    if 'git' in container['meta']:
+        newbuild['git'] = container['meta']['git']
+
     request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {'repo': repo_id, 'tag': tag}
 
