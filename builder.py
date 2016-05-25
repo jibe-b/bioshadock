@@ -291,6 +291,7 @@ class BioshadockDaemon(Daemon):
                                 tests = commands['test']['commands']
                         if tests:
                             for test in tests:
+                                test_container = None
                                 try:
                                     build['response'].append(
                                         "Test: " + str(test) + "\n")
@@ -323,12 +324,18 @@ class BioshadockDaemon(Daemon):
                                         build['response'].append(
                                             "Test result: Success\n")
 
-                                    BioshadockDaemon.cli.remove_container(
-                                        container=test_container.get('Id'))
                                 except Exception as e:
                                     log.error("failed to test container " + self.config['registry']['service'] + "/" + build['id'] + build_tag + ': '+str(e))
                                     build['status'] = False
                                     build['response'].append("Test result: Failed\n")
+                                try:
+                                    if test_container is not None:
+                                        BioshadockDaemon.cli.remove_container(
+                                            container=test_container.get('Id'))
+                                except Exception as e:
+                                    log.error('Failed to remove test container '+str(test_container.get('Id')))
+
+                                if not build['status']:
                                     break
                         # p= subprocess.Popen(["docker",
                         #                     "push",
@@ -388,7 +395,7 @@ class BioshadockDaemon(Daemon):
                                     "Failed to remove image " + build['id'] + " " + str(e))
                         else:
                             if build['status']:
-                                log.debug("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
+                                log.warn("Push image " + self.config['registry']['service'] + "/" + build['id'] + orig_build_tag)
                                 try:
                                     response = [line for line in BioshadockDaemon.cli.push(
                                         self.config['registry']['service'] + "/" + build['id'] + orig_build_tag, stream=True)]
