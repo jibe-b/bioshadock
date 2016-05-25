@@ -66,7 +66,7 @@ def valid_user(username, password, request):
     user = request.registry.db_mongo['users'].find_one({'id': username})
     if user is None or 'password' not in user:
         # If user logged via social, no password available, use apikey for authentication on API
-        if 'type' in user and user['type'] == 'social':
+        if user is not None and 'type' in user and user['type'] == 'social':
             if user['apikey'] and user['apikey'] == password:
                 return True
         ldap_dn = request.registry.config['ldap']['dn']
