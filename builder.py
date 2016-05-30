@@ -319,7 +319,6 @@ class BioshadockDaemon(Daemon):
                                         build['status'] = False
                                         build['response'].append(
                                             "Test result: Failed\n")
-                                        break
                                     else:
                                         build['response'].append(
                                             "Test result: Success\n")
