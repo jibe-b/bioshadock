@@ -167,7 +167,7 @@
                          </div>
                          <div itemprop="author" itemscope itemtype="http://schema.org/Person">Author: <span itemprop="name">{{container.user}}</span></div>
                          <div>Architecture: <span itemprop="operatingSystem">{{manifest.architecture || 'linux'}}</span></div>
-                         <div>Tag: {{manifest.tag}}</div>
+                         <!--<div>Tag: {{manifest.tag}}</div>-->
                     </div>
                 </div>
                 <div class="panel panel-info" ng-if="container.user_can_push">
@@ -209,7 +209,7 @@
                     <div class="panel-heading">Docker tags</div>
                     <div class="panel-body">
                         <div ng-repeat="tag in tags">
-                            <i class="glyphicon glyphicon-tag"></i> <span itemprop="softwareVersion">{{tag}}</span> <span ng-if="container.meta.docker_tags[tag]"> - <span itemprop="fileSize">{{formatSizeUnits(container.meta.docker_tags[tag].size)}}</span> - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag].last_updated)}}</span>
+                            <i class="glyphicon glyphicon-tag"></i> <span itemprop="softwareVersion">{{tag}}</span> <span ng-if="container.meta.docker_tags[tag.split('.').join('_')]"> - <span itemprop="fileSize">{{formatSizeUnits(container.meta.docker_tags[tag.split('.').join('_')].size)}}</span> - Last updated: {{convert_timestamp_to_date(container.meta.docker_tags[tag.split('.').join('_')].last_updated)}}</span>
                         </div>
                     </div>
                 </div>
