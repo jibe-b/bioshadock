@@ -296,7 +296,11 @@ class BioshadockDaemon(Daemon):
                                     build['response'].append(
                                         "Test: " + str(test) + "\n")
                                     log.debug("Execute test for " + self.config['registry']['service'] + "/" + build['id'] + build_tag + ": " + str(test))
-
+                                    if '"' in test:
+                                        build['response'].append("Test:Skipping:test contains double quotes:"+test)
+                                        log.debug("Test:Skipping:test contains double quotes:"+test)
+                                        continue
+                                    command='sh -c "'+test+'"'
                                     if git_repo_dir is not None:
                                         host_config = BioshadockDaemon.cli.create_host_config(binds={
                                             git_repo_dir: {
@@ -305,10 +309,10 @@ class BioshadockDaemon(Daemon):
                                             }
                                         })
                                         test_container = BioshadockDaemon.cli.create_container(
-                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, entrypoint=test, host_config=host_config)
+                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, command=command, host_config=host_config)
                                     else:
                                         test_container = BioshadockDaemon.cli.create_container(
-                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, entrypoint=test)
+                                            image=self.config['registry']['service'] + "/" + build['id'] + build_tag, command=command)
 
                                     response = BioshadockDaemon.cli.start(
                                         container=test_container.get('Id'))
