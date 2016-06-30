@@ -30,11 +30,16 @@ from logentries import LogentriesHandler
 
 from clair.clair import Clair
 
+import copy
+from elasticsearch import Elasticsearch
+
+
 requests.packages.urllib3.disable_warnings()
 
 
 class BioshadockDaemon(Daemon):
 
+    es = None
     db_mongo = None
     db_redis = None
     cli = None
@@ -100,6 +105,8 @@ class BioshadockDaemon(Daemon):
             if BioshadockDaemon.db_mongo is None:
                 mongo = MongoClient(self.config['services']['mongo']['url'])
                 BioshadockDaemon.db_mongo = mongo[self.config['services']['mongo']['db']]
+            if BioshadockDaemon.es is None:
+                BioshadockDaemon.es = Elasticsearch(self.config['services']['elastic']['host'].split(','))
             if BioshadockDaemon.db_redis is None:
                 BioshadockDaemon.db_redis = redis.StrictRedis(
                                 host=self.config['services']['redis']['host'],
@@ -461,6 +468,20 @@ class BioshadockDaemon(Daemon):
                 BioshadockDaemon.db_mongo[
                     'repository'].update({'id': build['id']},
                                          {'$set': meta_info})
+
+                log.debug('Update indexation')
+                updated_container = BioshadockDaemon.db_mongo['repository'].find_one({'id': build['id']})
+                es_repo = copy.deepcopy(updated_container)
+                del es_repo['_id']
+                del es_repo['builds']
+                del es_repo['meta']
+                es_repo['meta'] = {'description': updated_container['meta']['description'],
+                                   'short_description': updated_container['meta']['short_description'],
+                                   'tags': updated_container['meta']['tags']
+                }
+                BioshadockDaemon.es.index(index="bioshadock", doc_type='container', id=build['id'], body=es_repo)
+
+
                 if do_git:
                     cur_dir = os.path.dirname(os.path.realpath(__file__))
                     os.chdir(cur_dir)
