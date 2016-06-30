@@ -51,7 +51,7 @@
                 <button type="button" ng-click="$parent.addtag(newtag)" class="btn btn-primary">Add</button>
             </form>
             <div class="row tags">
-                <span ng-repeat="tag in container.meta.tags" class="label label-info">{{tag}} <span ng-if="container.user_can_push"><i ng-click="delete_tag(tag)" class="glyphicon glyphicon-trash"> </i></span></span>
+                <span ng-repeat="tag in container.meta.tags" class="label label-info col-sm-3">{{tag}} <span ng-if="container.user_can_push"><i ng-click="delete_tag(tag)" class="glyphicon glyphicon-trash"> </i></span></span>
             </div>
         </div>
     </div>
