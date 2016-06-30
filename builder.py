@@ -145,6 +145,7 @@ class BioshadockDaemon(Daemon):
                 cwl = None
                 entrypoint = None
                 description = None
+                tags = []
                 size = None
                 labels = []
                 layer_ids = []
@@ -271,8 +272,10 @@ class BioshadockDaemon(Daemon):
                             for label in list(container_inspect['Config']['Labels'].keys()):
                                 label_elts = container_inspect[
                                     'Config']['Labels'][label]
-                                if label.endswith('Description'):
+                                if label.lower().endswith('description'):
                                     description = label_elts
+                                if label.lower().endswith('tags'):
+                                    tags = label_elts.split(',')
                                 if label_elts.startswith('{') or label_elts.startswith('['):
                                     try:
                                         label_elts = json.loads(label_elts)
@@ -440,6 +443,8 @@ class BioshadockDaemon(Daemon):
                              'meta.version.'+info_tag.replace('.','_')+'.layers': layer_ids,
                              'meta.clair': clair_check
                              }
+                if tags:
+                    meta_info['meta.tags'] = tags
                 log.debug(
                     "Update repository " + build['id'] + ": " + str(meta_info))
                 if description is not None:
