@@ -249,6 +249,7 @@ class BioshadockDaemon(Daemon):
                         self.config['registry']['service'] + "/" + build['id'] + build_tag)
                 except Exception as e:
                     log.error('Build error: ' + str(e))
+                    response = [str(e)]
 
                 build['response'] = []
                 for res in response:
