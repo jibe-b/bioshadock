@@ -689,16 +689,15 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
     return time;
     };
 
-    $scope.git_tag = null;
 
     $scope.git_build_tag = function() {
-        if($scope.git_tag==null || $scope.git_tag===undefined || $scope.git_tag =='') {
+        if($scope.container.git_tag==null || $scope.container.git_tag===undefined || $scope.container.git_tag =='') {
             $scope.msg = 'Tag not set';
             return;
         }
         var req = {
             method: 'GET',
-            url: '/container/tag/'+$scope.container.id+'/'+$scope.git_tag+'?apikey='+$scope.user.apikey,
+            url: '/container/tag/'+$scope.container.id+'/'+$scope.container.git_tag+'?apikey='+$scope.user.apikey,
             headers: {
                 'Content-Type': 'application/json'
             }

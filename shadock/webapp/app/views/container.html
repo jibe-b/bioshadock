@@ -35,7 +35,7 @@
             <div class="form-group">
                 <div class="form-group"><input type="text" class="form-control" ng-model="container.meta.git"></input></div>
                 <form class="form-inline" ng-if="container.meta.git"><div class="form-group">Build hook url: <input class="form-control" value="/container/git/{{container.id}}?apikey={{user.apikey}}" disabled/><button class="btn btn-primary" ng-click="git_build()">Build</button></div></form>
-                <form class="form-inline" ng-if="container.meta.git"><div class="form-group">Build and tag hook url: <input class="form-control" value="/container/tag/{{container.id}}/TAGVALUE?apikey={{user.apikey}}" disabled/><input type="text" class="form-control" ng-model="git_tag"></input><button class="btn btn-primary" ng-click="git_build_tag()">Build and tag</button></div></div></form>
+                <form class="form-inline" ng-if="container.meta.git"><div class="form-group">Build and tag hook url: <input class="form-control" value="/container/tag/{{container.id}}/TAGVALUE?apikey={{user.apikey}}" disabled/><input type="text" class="form-control" ng-model="container.git_tag"></input><button class="btn btn-primary" ng-click="git_build_tag()">Build and tag</button></div></div></form>
             </div>
         </div>
     </div>
