@@ -224,9 +224,18 @@ class BioshadockDaemon(Daemon):
                         f.write(dockerfile.encode('utf-8'))
                         f.close()
                     else:
-                        log.debug("Use git Dockerfile")
-                        with open("Dockerfile", "r") as gitDockerfile:
-                            dockerfile = gitDockerfile.read().encode('utf-8')
+                        try:
+                            log.debug("Use git Dockerfile")
+                            with open("Dockerfile", "r") as gitDockerfile:
+                                dockerfile = gitDockerfile.read().encode('utf-8')
+                        except Exception as e:
+                            log.error('Failed to decode Docker file: '+str(e))
+                            build['progress'] = 'failed'
+                            build['response'] = ['Failed to decode dockerfile: '+str(e)]
+                            BioshadockDaemon.db_mongo['builds'].update(
+                                {'_id': ObjectId(build['build'])}, build)
+                            continue
+
 
                 f = BytesIO(dockerfile.encode('utf-8'))
 
