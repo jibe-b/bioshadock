@@ -479,6 +479,19 @@ class BioshadockDaemon(Daemon):
                     'repository'].update({'id': build['id']},
                                          {'$set': meta_info})
 
+                # Record specific tag info
+                if build['status']:
+                    BioshadockDaemon.db_mongo['versions'].update(
+                            {'repo': build['id'], 'version': info_tag},
+                            {
+                                'repo': build['id'],
+                                'version': info_tag,
+                                'dockerfile': dockerfile,
+                                'cwl': cwl
+                            },
+                            upsert=True
+                            )
+
                 log.debug('Update indexation')
                 updated_container = BioshadockDaemon.db_mongo['repository'].find_one({'id': build['id']})
                 es_repo = copy.deepcopy(updated_container)

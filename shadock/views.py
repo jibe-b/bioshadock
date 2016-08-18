@@ -253,6 +253,9 @@ def containers_latest(request):
 
 @view_config(route_name='containers_all', renderer='json', request_method='GET')
 def containers_all(request):
+    light = False
+    if 'light' in request.params:
+        light = True
     user = is_logged(request)
     if user is None or not is_admin(user['id'], request):
         #return HTTPForbidden()
@@ -267,7 +270,27 @@ def containers_all(request):
             repo['meta']['Dockerfile'] = True
         else:
             repo['meta']['Dockerfile'] = False
-        user_repos.append(repo)
+
+        if light:
+            if 'built' not in repo['meta']:
+                repo['meta']['built'] = False
+            if 'short_description' not in repo['meta']:
+                repo['meta']['short_description'] = repo['meta']['description']
+            if 'git' not in repo['meta']:
+                repo['meta']['git'] = None
+            user_repos.append({
+                'id': repo['id'],
+                'meta': {
+                    'short_description': repo['meta']['short_description'],
+                    'built': repo['meta']['built'],
+                    'git': repo['meta']['git'],
+                    'Dockerfile': repo['meta']['Dockerfile']
+                },
+                'user': repo['user'],
+                'visible': repo['visible']
+            })
+        else:
+            user_repos.append(repo)
     return user_repos
 
 @view_config(route_name='builds', renderer='json', request_method='GET')
@@ -1428,11 +1451,67 @@ def ga4gh_tool_dockerfile(request):
         return HTTPNotFound()
     return { 'dockerfile': repo['meta']['Dockerfile'] }
 
+'''
+    config.add_route('ga4gh_tools', '/api/ga4gh/v1/tools')
+    config.add_route('ga4gh_tools_id', '/api/ga4gh/v1/tools/{id}')
+    config.add_route('ga4gh_tools_id_versions', '/api/ga4gh/v1/tools/{id}/versions')
+    config.add_route('ga4gh_tools_id_version', '/api/ga4gh/v1/tools/{id}/versions/{versionid}')
+    config.add_route('ga4gh_tools_id_version_descriptor', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/{type}/descriptor')
+    config.add_route('ga4gh_tools_id_version_descriptor_file_relative_path', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/{type}/descriptor/{relativepath}')
+    config.add_route('ga4gh_tools_id_version_dockerfile', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/dockerfile')
+    config.add_route('ga4gh_metadata', '/api/ga4gh/v1/metadata')
+    config.add_route('ga4gh_tool_classes', '/api/ga4gh/v1/tool-classes')
+'''
+
+
+@view_config(route_name='ga4gh_metadata', renderer='json', request_method='GET')
+def ga4gh_metadata(request):
+    return {
+        'version': '1.0',
+        'api-version': '1.0',
+        'country': 'FRA',
+        'friendly-name': 'bioshadock'
+    }
+
+@view_config(route_name='ga4gh_tools_id', renderer='json', request_method='GET')
+def ga4gh_tools_id(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tools_id_versions', renderer='json', request_method='GET')
+def ga4gh_tools_id_versions(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tools_id_version', renderer='json', request_method='GET')
+def ga4gh_tools_id_version(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tools_id_version_descriptor', renderer='json', request_method='GET')
+def ga4gh_tools_id_version_descriptor(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tools_id_version_descriptor_file_relative_path', renderer='json', request_method='GET')
+def ga4gh_tools_id_version_descriptor_file_relative_path(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tools_id_version_dockerfile', renderer='json', request_method='GET')
+def ga4gh_tools_id_version_dockerfile(request):
+    return HTTPNotFound()
+
+@view_config(route_name='ga4gh_tool_classes', renderer='json', request_method='GET')
+def ga4gh_tool_classes(request):
+    return HTTPNotFound()
 
 @view_config(route_name='ga4gh_tools', renderer='json', request_method='GET')
 def ga4gh_tools(request):
     repos = request.registry.db_mongo['repository'].find({'visible': True})
     tools = []
+    offset= 0
+    if 'offset' in request.params:
+        offset = int(request.params['offset'])
+    limit = -1
+    if 'limit' in request.params:
+        limit = int(request.params['limit'])
+    index = 0
     for repo in repos:
         toolname = repo['id'].split('/')[-1:][0]
         if 'cwl' not in repo['meta']:
@@ -1459,24 +1538,45 @@ def ga4gh_tools(request):
             if request.params['author'] != repo['user']:
                 continue
         tool = {
+            'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
             'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],
-            'registry': request.registry.config['registry']['service'],
             'organization': request.registry.config['registry']['service'],
-            'name': repo['id'],
             'toolname': toolname,
-            #'tooltype': {},
+            'tooltype': {},
             'description': repo['meta']['description'],
             'author': repo['user'],
             'meta-version': 'latest',
-            'versions': [{
-                'name': toolname,
-                'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],
-                'descriptor': { 'descriptor': repo['meta']['cwl'] },
-                'image': request.registry.config['registry']['service'] + '/' + repo['id'],
-                'dockerfile': repo['meta']['Dockerfile']
-            }]
+            'versions': []
         }
-        tools.append(tool)
+        # Versions
+        if 'docker_tags' in repo['meta']:
+            for docker_tag in repo['meta']['docker_tags']:
+                if 'tag' not in repo['meta']['docker_tags'][docker_tag]:
+                    repo['meta']['docker_tags'][docker_tag]['tag'] = 'latest'
+                version = {
+                    'id': repo['meta']['docker_tags'][docker_tag]['tag'],
+                    'name': repo['meta']['docker_tags'][docker_tag]['tag'],
+                    'meta-version': 'latest',
+                    'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
+                    'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo['meta']['docker_tags'][docker_tag]['tag'],
+                    'descriptor': False,
+                    'dockerfile': False
+                }
+
+                #repo_version = request.registry.db_mongo['versions'].find_one({'repo': repo['id'], 'version': repo['meta']['docker_tags'][docker_tag]['tag']})
+                if 'cwl_path' in repo['meta'] and repo['meta']['cwl_path']:
+                    version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+                if repo['meta']['Dockerfile']:
+                    version['dockerfile'] = {'dockerfile': True}
+                tool['versions'].append(version)
+
+        if limit == -1 or index < limit:
+            if index >= offset and tool['versions']:
+                tools.append(tool)
+                index += 1
+        if limit >= 0 and index >= limit:
+            break
+
     return tools
 
 @view_config(route_name='home', renderer='json')

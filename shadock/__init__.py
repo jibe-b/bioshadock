@@ -143,10 +143,20 @@ def main(global_config, **settings):
     config.add_route('api2_other', '/v2/*api')
     config.add_route('api_other', '/v1/*api')
     # GA4GH API
-    config.add_route('ga4gh_tools', '/tools')
-    config.add_route('ga4gh_tools_query', '/tools/query')
-    config.add_route('ga4gh_tool_descriptor', '/tools/{id}/descriptor')
-    config.add_route('ga4gh_tool_dockerfile', '/tools/{id}/dockerfile')
+    config.add_route('ga4gh_tools', '/api/ga4gh/v1/tools')
+    config.add_route('ga4gh_tools_id', '/api/ga4gh/v1/tools/{id}')
+    config.add_route('ga4gh_tools_id_versions', '/api/ga4gh/v1/tools/{id}/versions')
+    config.add_route('ga4gh_tools_id_version', '/api/ga4gh/v1/tools/{id}/versions/{versionid}')
+    config.add_route('ga4gh_tools_id_version_descriptor', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/{type}/descriptor')
+    config.add_route('ga4gh_tools_id_version_descriptor_file_relative_path', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/{type}/descriptor/{relativepath}')
+    config.add_route('ga4gh_tools_id_version_dockerfile', '/api/ga4gh/v1/tools/{id}/versions/{versionid}/dockerfile')
+    config.add_route('ga4gh_metadata', '/api/ga4gh/v1/metadata')
+    config.add_route('ga4gh_tool_classes', '/api/ga4gh/v1/tool-classes')
+
+    # Deprecated
+    config.add_route('ga4gh_tools_query', '/api/ga4gh/v1/tools/query')
+    config.add_route('ga4gh_tool_descriptor', '/api/ga4gh/v1/tools/{id}/descriptor')
+    config.add_route('ga4gh_tool_dockerfile', '/api/ga4gh/v1/tools/{id}/dockerfile')
     config.scan()
 
     json_renderer = JSON()

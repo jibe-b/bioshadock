@@ -631,7 +631,7 @@ var app = angular.module('bioshadock', ['bioshadock.resources', 'ngSanitize', 'n
 .controller('allcontainersCtrl',
     function ($scope, $route, Container) {
         $scope.msg = "Loading containers...."
-        Container.query_all().$promise.then(function(data) {
+        Container.query_all({'light': true}).$promise.then(function(data) {
             $scope.containers = data;
             $scope.msg = null;
         });
