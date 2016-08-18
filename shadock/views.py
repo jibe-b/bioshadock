@@ -1475,19 +1475,125 @@ def ga4gh_metadata(request):
 
 @view_config(route_name='ga4gh_tools_id', renderer='json', request_method='GET')
 def ga4gh_tools_id(request):
-    return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if not repo:
+        return HTTPNotFound()
+    repo_versions = request.registry.db_mongo['versions'].find({'repo': repo['id']})
+    if not repo_versions:
+        return HTTPNotFound()
+    toolname = repo['id'].split('/')[-1:][0]        
+    tool = {
+            'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
+            'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],
+            'organization': request.registry.config['registry']['service'],
+            'toolname': toolname,
+            'tooltype': {},
+            'description': repo['meta']['description'],
+            'author': repo['user'],
+            'meta-version': 'latest',
+            'versions': []
+        }
+    # Versions
+    versions = []
+    # Versions
+    for repo_version in repo_versions:
+        version = {
+            'id': repo_version['version'],
+            'name': repo_version['version'],
+            'meta-version': 'latest',
+            'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
+            'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
+            'descriptor': False,
+            'dockerfile': False
+        }
+        if repo_version['cwl']:
+            version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+        if repo_version['dockerfile']:
+                version['dockerfile'] = {'dockerfile': True}
+        versions.append(version)
+    tool['versions'] = versions
+    return tool
 
 @view_config(route_name='ga4gh_tools_id_versions', renderer='json', request_method='GET')
 def ga4gh_tools_id_versions(request):
-    return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if not repo:
+        return HTTPNotFound()
+    repo_versions = request.registry.db_mongo['versions'].find({'repo': repo['id']})
+    if not repo_versions:
+        return HTTPNotFound()
+
+    versions = []
+    # Versions
+    for repo_version in repo_versions:
+        version = {
+            'id': repo_version['version'],
+            'name': repo_version['version'],
+            'meta-version': 'latest',
+            'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
+            'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
+            'descriptor': False,
+            'dockerfile': False
+        }
+        if repo_version['cwl']:
+            version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+        if repo_version['dockerfile']:
+                version['dockerfile'] = {'dockerfile': True}
+        versions.append(version)
+    return versions
 
 @view_config(route_name='ga4gh_tools_id_version', renderer='json', request_method='GET')
 def ga4gh_tools_id_version(request):
-    return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo_version_id = request.matchdict['versionid']
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if not repo:
+        return HTTPNotFound()
+    repo_version = request.registry.db_mongo['versions'].find_one({'repo': repo['id'], 'version': repo_version_id})
+    if not repo_version:
+        return HTTPNotFound()
+
+    version = {
+        'id': repo_version['version'],
+        'name': repo_version['version'],
+        'meta-version': 'latest',
+        'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
+        'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
+        'descriptor': False,
+        'dockerfile': False
+    }
+    if repo_version['cwl']:
+        version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+    if repo_version['dockerfile']:
+            version['dockerfile'] = {'dockerfile': True}
+    return version
 
 @view_config(route_name='ga4gh_tools_id_version_descriptor', renderer='json', request_method='GET')
 def ga4gh_tools_id_version_descriptor(request):
-    return HTTPNotFound()
+    if request.matchdict['type'] not in ['CWL', 'plain-CWL']:
+        return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    repo_version = request.matchdict['versionid']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if not repo:
+        return HTTPForbidden()
+    repo_version = request.registry.db_mongo['versions'].find_one({'repo': repo['id'], 'version': repo_version})
+    if not repo_version:
+        return HTTPNotFound()
+
+    if not repo_version['cwl']:
+        return HTTPNotFound()
+    return { 'type': 'CWL', 'descriptor': repo_version['cwl'] }
 
 @view_config(route_name='ga4gh_tools_id_version_descriptor_file_relative_path', renderer='json', request_method='GET')
 def ga4gh_tools_id_version_descriptor_file_relative_path(request):
@@ -1495,7 +1601,21 @@ def ga4gh_tools_id_version_descriptor_file_relative_path(request):
 
 @view_config(route_name='ga4gh_tools_id_version_dockerfile', renderer='json', request_method='GET')
 def ga4gh_tools_id_version_dockerfile(request):
-    return HTTPNotFound()
+    repo_id = request.matchdict['id']
+    repo_version = request.matchdict['versionid']
+    elts = repo_id.split('@')
+    repo_id = elts[0]
+    repo = request.registry.db_mongo['repository'].find_one({'_id': ObjectId(repo_id), 'visible': True})
+    if not repo:
+        return HTTPNotFound()
+    repo_version = request.registry.db_mongo['versions'].find_one({'repo': repo['id'], 'version': repo_version})
+    if not repo_version:
+        return HTTPNotFound()
+
+    if not repo_version['dockerfile']:
+        return HTTPNotFound()
+    return { 'dockerfile': repo_version['dockerfile'] }
+
 
 @view_config(route_name='ga4gh_tool_classes', renderer='json', request_method='GET')
 def ga4gh_tool_classes(request):
