@@ -144,7 +144,7 @@
         <div><i class="glyphicon glyphicon-download"> </i> <span>{{container.pulls || 0}}</span>  <span ng-if="container.meta.last_updated"> - Last pushed: {{ convert_timestamp_to_date(container.meta.last_updated)}}</span></div>
 </div>
 <div class="alert alert-info" role="alert">
-    <p>docker pull {{service}}/{{container.id}}[:tag]
+    <p>docker pull {{service}}/{{container.id}}
           <button ng-if="user.role=='admin'" class="pull-right btn btn-warning" ng-click="elixir()">Push to Elixir registry</button>
     </p>
 </div>
