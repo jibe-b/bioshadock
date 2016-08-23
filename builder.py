@@ -248,6 +248,7 @@ class BioshadockDaemon(Daemon):
 
                 response = None
                 container_inspect = None
+                build_ok = False
                 try:
                     orig_build_tag = build_tag
                     if do_squash:
@@ -256,6 +257,7 @@ class BioshadockDaemon(Daemon):
                         fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True)]
                     container_inspect = BioshadockDaemon.cli.inspect_image(
                         self.config['registry']['service'] + "/" + build['id'] + build_tag)
+                    build_ok = True
                 except Exception as e:
                     log.error('Build error: ' + str(e))
                     response = [str(e)]
@@ -269,7 +271,7 @@ class BioshadockDaemon(Daemon):
                         log.debug('Failed to decode json from stream output')
                         build['response'].append(res)
 
-                if build['response']:
+                if build['response'] and build_ok:
                     log.debug(str(response))
                     last = build['response'][len(build['response']) - 1]
                     matches = re.search('Successfully built\s+(\w+)', last)
