@@ -43,6 +43,9 @@ from bioshadock_biotools.biotools import BioTools
 from clair.clair import Clair
 
 
+def build_container(request, build):
+    request.registry.db_redis.hincrby('bioshadock:user:builds', build['user'], 1)
+    request.registry.db_redis.rpush('bioshadock:builds:' + build['user'], dumps(build))
 
 def is_admin(username, request):
     user = request.registry.db_mongo['users'].find_one({'id': username})
@@ -530,7 +533,8 @@ def container_tag(request):
     if 'git' in container['meta']:
         newbuild['git'] = container['meta']['git']
 
-    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+    build_container(request, newbuild)
+    # request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {'repo': repo_id, 'tag': tag}
 
 
@@ -580,7 +584,8 @@ def container_git(request):
         'cwl_path': container['meta']['cwl_path'],
         'user': user_id
     }
-    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+    build_container(request, newbuild)
+    # request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
 
 
@@ -617,7 +622,8 @@ def container_dockerfile(request):
         'user': user['id'],
         'cwl_path': cwl_path
     }
-    request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+    build_container(request, newbuild)
+    # request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
     return {}
 
 
@@ -848,7 +854,8 @@ def containers_new(request):
             'user': user['id'],
             'cwl_path': None
         }
-        request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
+        build_container(request, newbuild)
+        # request.registry.db_redis.rpush('bioshadock:builds', dumps(newbuild))
         repo = request.registry.db_mongo['repository'].find_one({'id': repo_id})
         es_repo = copy.deepcopy(repo)
         del es_repo['_id']
@@ -1484,7 +1491,7 @@ def ga4gh_tools_id(request):
     repo_versions = request.registry.db_mongo['versions'].find({'repo': repo['id']})
     if not repo_versions:
         return HTTPNotFound()
-    toolname = repo['id'].split('/')[-1:][0]        
+    toolname = repo['id'].split('/')[-1:][0]
     tool = {
             'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
             'id': str(repo['_id'])+'@'+request.registry.config['registry']['service'],

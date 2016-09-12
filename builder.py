@@ -62,6 +62,31 @@ class BioshadockDaemon(Daemon):
             layer_ids.append(layer['id'])
         return layer_ids
 
+
+    def stats(self):
+        config_file = "config.yaml"
+        if "BIOSHADOCK_CONFIG" in os.environ:
+            config_file = os.environ["BIOSHADOCK_CONFIG"]
+
+        self.config= None
+        with open(config_file, 'r') as ymlfile:
+            self.config = yaml.load(ymlfile)
+
+        BioshadockDaemon.db_redis = redis.StrictRedis(
+                                host=self.config['services']['redis']['host'],
+                                port=self.config['services']['redis']['port'],
+                                db=self.config['services']['redis']['db']
+                                )
+
+        queues = BioshadockDaemon.db_redis.hkeys('bioshadock:user:builds')
+        print("Build usage:")
+        for queue in queues:
+            print("\t%s: %s, in queue: %d" % (queue,
+                        BioshadockDaemon.db_redis.hget('bioshadock:user:builds', queue),
+                        BioshadockDaemon.db_redis.llen('bioshadock:builds:' + queue)))
+        sys.exit(0)
+
+
     def run(self):
         config_file = "config.yaml"
         if "BIOSHADOCK_CONFIG" in os.environ:
@@ -96,6 +121,8 @@ class BioshadockDaemon(Daemon):
         do_squash = False
         if self.config['general']['squash']['use'] == 1:
             do_squash = True
+
+        queue_counter = 0
 
         while True:
             if os.path.exists('/tmp/bioshadocker-builder.stop'):
@@ -133,9 +160,26 @@ class BioshadockDaemon(Daemon):
                         email=self.config['registry']['auth']['email'],
                         registry=self.config['registry']['service'])
 
-            build = BioshadockDaemon.db_redis.lpop('bioshadock:builds')
+            queues = BioshadockDaemon.db_redis.hkeys('bioshadock:user:builds')
+
+            user_id = None
+
+            if queue_counter >= len(queues):
+                log.debug("Queue: go back to beginning")
+                queue_counter = 0
+
+
+            build = None
+
+            while build is None and queue_counter < len(queues):
+                user_id = queues[queue_counter]
+                log.debug("Queue:Check:%s" % (user_id))
+                build = BioshadockDaemon.db_redis.lpop('bioshadock:builds:' + user_id)
+                queue_counter += 1
+
             dockerfile = None
             if build is not None:
+                log.info("Build queue: %s" % (user_id))
                 build = loads(build)
                 BioshadockDaemon.db_mongo['builds'].update(
                     {'_id': ObjectId(build['build'])}, {'$set': {'progress': 'building'}})
@@ -358,7 +402,7 @@ class BioshadockDaemon(Daemon):
                                         BioshadockDaemon.cli.remove_container(
                                             container=test_container.get('Id'))
                                 except Exception as e:
-                                    log.error('Failed to remove test container '+str(test_container.get('Id')))
+                                    log.error('Failed to remove test container '+str(test_container.get('Id'))+': '+str(e))
 
                                 if not build['status']:
                                     break
@@ -536,10 +580,12 @@ if __name__ == "__main__":
         elif 'once' == sys.argv[1]:
             daemon.run_once = True
             daemon.run()
+        elif 'stats' == sys.argv[1]:
+            daemon.stats()
         else:
             print "Unknown command"
             sys.exit(2)
         sys.exit(0)
     else:
-        print "usage: %s start|stop|restart|run|once" % sys.argv[0]
+        print "usage: %s start|stop|restart|run|once|stats" % sys.argv[0]
         sys.exit(2)
