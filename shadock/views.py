@@ -18,6 +18,9 @@ import os
 import subprocess
 import bcrypt
 
+import smtplib
+from email.mime.text import MIMEText
+
 from bson import json_util
 from bson.json_util import dumps
 from bson.objectid import ObjectId
@@ -42,6 +45,28 @@ from bioshadock_biotools.biotools import BioTools
 
 from clair.clair import Clair
 
+def notify_new_container_email(request, repo):
+    if not request.registry.config['general']['mail']['smtp_host'] or not request.registry.config['general']['mail']['to']:
+        logging.debug('No smtp or to email configuration, skipping mail notification')
+        return
+    to = task['user']['email']
+    subject = 'New container created: ' + str(repo)
+    message = 'New container: ' + str(repo)
+    msg = MIMEText(message)
+    msg['Subject'] = subject
+    msg['From'] = request.registry.config['general']['mail']['from']
+    msg['To'] = request.registry.config['general']['mail']['to']
+    try:
+        s = smtplib.SMTP(request.registry.config['general']['mail']['smtp_host'], request.registry.config['general']['mail']['smtp_port'])
+        if request.registry.config['general']['mail']['tls']:
+            s.starttls()
+        if request.registry.config['general']['mail']['smtp_user']:
+            s.login(request.registry.config['general']['mail']['smtp_user'], request.registry.config['general']['mail']['smtp_password'])
+
+        s.sendmail(msg['From'], [msg['To']], msg.as_string())
+        s.quit()
+    except Exception as e:
+        logging.error('Email error: ' + str(e))
 
 def build_container(request, build):
     request.registry.db_redis.hincrby('bioshadock:user:builds', build['user'], 1)
@@ -1290,6 +1315,7 @@ def user_can_push(username, repository, request):
                      'builds': []
                    }
             request.registry.db_mongo['repository'].insert(repo)
+            notify_new_container_email(request, repo)
             es_repo = copy.deepcopy(repo)
             del es_repo['_id']
             del es_repo['builds']

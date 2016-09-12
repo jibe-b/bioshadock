@@ -181,7 +181,7 @@ class BioshadockDaemon(Daemon):
             if build is not None:
                 log.info("Build queue: %s" % (user_id))
                 build = loads(build)
-                log.info('Build request: ' + str(build['id'])
+                log.info('Build request: ' + str(build['id']))
                 BioshadockDaemon.db_mongo['builds'].update(
                     {'_id': ObjectId(build['build'])}, {'$set': {'progress': 'building'}})
                 dt = datetime.datetime.now()
@@ -252,7 +252,7 @@ class BioshadockDaemon(Daemon):
                         log.debug(str(git_repo_dir))
                         os.chdir(git_repo_dir)
                     except Exception as e:
-                        logging.error(str(e))
+                        logging.error('Git error: ' + str(e))
                         BioshadockDaemon.db_mongo['builds'].update({'_id':
                                                                     ObjectId(
                                                                         build[
