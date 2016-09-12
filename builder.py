@@ -181,6 +181,7 @@ class BioshadockDaemon(Daemon):
             if build is not None:
                 log.info("Build queue: %s" % (user_id))
                 build = loads(build)
+                log.info('Build request: ' + str(build['id'])
                 BioshadockDaemon.db_mongo['builds'].update(
                     {'_id': ObjectId(build['build'])}, {'$set': {'progress': 'building'}})
                 dt = datetime.datetime.now()
