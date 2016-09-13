@@ -1539,11 +1539,11 @@ def ga4gh_tools_id(request):
             'meta-version': 'latest',
             'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
             'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
-            'descriptor': False,
+            'descriptor-type': [],
             'dockerfile': False
         }
         if repo_version['cwl']:
-            version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+            version['descriptor-type'] = ['CWL']
         if repo_version['dockerfile']:
                 version['dockerfile'] = {'dockerfile': True}
         versions.append(version)
@@ -1571,11 +1571,11 @@ def ga4gh_tools_id_versions(request):
             'meta-version': 'latest',
             'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
             'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
-            'descriptor': False,
+            'descriptor-type': [],
             'dockerfile': False
         }
         if repo_version['cwl']:
-            version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+            version['descriptor-type'] = ['CWL']
         if repo_version['dockerfile']:
                 version['dockerfile'] = {'dockerfile': True}
         versions.append(version)
@@ -1600,11 +1600,11 @@ def ga4gh_tools_id_version(request):
         'meta-version': 'latest',
         'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
         'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo_version['version'],
-        'descriptor': False,
+        'descriptor-type': [],
         'dockerfile': False
     }
     if repo_version['cwl']:
-        version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+        version['descriptor-type'] = ['CWL']
     if repo_version['dockerfile']:
             version['dockerfile'] = {'dockerfile': True}
     return version
@@ -1712,13 +1712,13 @@ def ga4gh_tools(request):
                     'meta-version': 'latest',
                     'url': 'https://'+request.registry.config['registry']['issuer']+ '/app/#/container/' + repo['id'],
                     'image': request.registry.config['registry']['service'] + '/' + repo['id'] + ':' + repo['meta']['docker_tags'][docker_tag]['tag'],
-                    'descriptor': False,
+                    'descriptor-type': [],
                     'dockerfile': False
                 }
 
                 #repo_version = request.registry.db_mongo['versions'].find_one({'repo': repo['id'], 'version': repo['meta']['docker_tags'][docker_tag]['tag']})
                 if 'cwl_path' in repo['meta'] and repo['meta']['cwl_path']:
-                    version['descriptor'] = {'descriptor': True, 'type': 'CWL'}
+                    version['descriptor-type'] = ['CWL']
                 if repo['meta']['Dockerfile']:
                     version['dockerfile'] = {'dockerfile': True}
                 tool['versions'].append(version)
