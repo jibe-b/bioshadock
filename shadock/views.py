@@ -50,8 +50,8 @@ def notify_new_container_email(request, repo):
         logging.debug('No smtp or to email configuration, skipping mail notification')
         return
     to = request.registry.config['general']['mail']['to']
-    subject = 'New container created: ' + str(repo)
-    message = 'New container: ' + str(repo)
+    subject = 'New container created: ' + str(repo['id'])
+    message = 'New container: ' + str(repo['id'])
     msg = MIMEText(message)
     msg['Subject'] = subject
     msg['From'] = request.registry.config['general']['mail']['from']
