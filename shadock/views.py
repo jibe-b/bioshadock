@@ -899,7 +899,7 @@ def containers_search(request):
     if user is None:
             repos = request.registry.db_mongo['repository'].find({'visible': True, 'id': regx})
     else:
-        repos = request.registry.db_mongo['repository'].find({'$or': [{'user': user['id']}, {'acl_pull.members': user['id']}], 'id': regx})
+        repos = request.registry.db_mongo['repository'].find({'$or': [{'visible': True}, {'user': user['id']}, {'acl_pull.members': user['id']}], 'id': regx})
     user_repos = []
     for repo in repos:
         user_repos.append(repo)
