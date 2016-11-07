@@ -691,6 +691,8 @@ def container_delete(request):
     form = json.loads(request.body, encoding=request.charset)
     token = form['token']
     tag = 'latest'
+    if 'tag' in form:
+        tag = form['tag']
     http = urllib3.PoolManager()
     headers = {'Authorization': 'Bearer '+token,
                 'Accept': 'application/vnd.docker.distribution.manifest.v2+json'}
