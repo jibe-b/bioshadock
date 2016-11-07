@@ -684,7 +684,7 @@ def container_delete(request):
         return HTTPForbidden()
     if repo is None:
         return HTTPNotFound()
-    if not is_admin(user['id'], request) and repo['user'] != user['id'] and user['id'] not in repo['acl_push']['members']:
+    if not (is_admin(user['id'], request) or repo['user'] == user['id'] or user['id'] in repo['acl_push']['members']):
         return HTTPForbidden()
     # Get digest from manifest Docker-Content-Digest sha256:95b09cb5b7cd38d73a7dc9618c34148559cf1ed3a0066c85d37e1d6cf4fb9004
     # Send DELETE request DELETE /v2/<name>/manifests/<reference>
