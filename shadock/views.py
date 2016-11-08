@@ -688,6 +688,9 @@ def container_delete(request):
         return HTTPForbidden()
     # Get digest from manifest Docker-Content-Digest sha256:95b09cb5b7cd38d73a7dc9618c34148559cf1ed3a0066c85d37e1d6cf4fb9004
     # Send DELETE request DELETE /v2/<name>/manifests/<reference>
+    # Commented, removing image seems to remove some layers used by other image
+    # Delete from database but keep in ever growing registry
+    '''
     form = json.loads(request.body, encoding=request.charset)
     token = form['token']
     tag = 'latest'
@@ -709,7 +712,7 @@ def container_delete(request):
         r = http.request('DELETE', request.registry.config['registry']['docker']+'/v2/'+repo_id+'/manifests/'+docker_content_digest, headers=headers)
         if r.status != 202:
             logging.error('Could not find or delete image ' + repo_id + 'in registry')
-
+    '''
     request.registry.db_mongo['repository'].remove({'id': repo_id})
     request.registry.es.delete(index="bioshadock", doc_type='container', id=repo_id)
     return repo
