@@ -714,6 +714,8 @@ def container_delete(request):
             logging.error('Could not find or delete image ' + repo_id + 'in registry')
     '''
     request.registry.db_mongo['repository'].remove({'id': repo_id})
+    request.registry.db_mongo['builds'].remove({'id': repo_id})
+    request.registry.db_mongo['versions'].remove({'repo': repo_id})
     request.registry.es.delete(index="bioshadock", doc_type='container', id=repo_id)
     return repo
 
