@@ -291,7 +291,7 @@ class BioshadockDaemon(Daemon):
                     info_tag = build['tag']
                 log.warn('Build: ' + str(build['id']) + ':' + str(info_tag))
 
-                response = None
+                response = []
                 container_inspect = None
                 build_ok = False
                 try:
@@ -300,12 +300,16 @@ class BioshadockDaemon(Daemon):
                         build_tag = ":squash"
                     response = [line for line in BioshadockDaemon.cli.build(
                         fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['services']['docker']['timeout'])]
+                except Exception as e:
+                    log.error('Build error: ' + str(e))
+                    response += [str(e)]
+                try:
                     container_inspect = BioshadockDaemon.cli.inspect_image(
                         self.config['registry']['service'] + "/" + build['id'] + build_tag)
                     build_ok = True
                 except Exception as e:
-                    log.error('Build error: ' + str(e))
-                    response = [str(e)]
+                    log.error('Inspect error: ' + str(e))
+                    response += [str(e)]
 
                 build['response'] = []
                 for res in response:
