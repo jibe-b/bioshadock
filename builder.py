@@ -299,7 +299,7 @@ class BioshadockDaemon(Daemon):
                     if do_squash:
                         build_tag = ":squash"
                     response = [line for line in BioshadockDaemon.cli.build(
-                        fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['docker']['timeout'])]
+                        fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['services']['docker']['timeout'])]
                     container_inspect = BioshadockDaemon.cli.inspect_image(
                         self.config['registry']['service'] + "/" + build['id'] + build_tag)
                     build_ok = True
