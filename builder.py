@@ -298,8 +298,12 @@ class BioshadockDaemon(Daemon):
                     orig_build_tag = build_tag
                     if do_squash:
                         build_tag = ":squash"
-                    response = [line for line in BioshadockDaemon.cli.build(
-                        fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['services']['docker']['timeout'])]
+                    if do_git:
+                         response = [line for line in BioshadockDaemon.cli.build(
+                            path=git_repo_dir, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['services']['docker']['timeout'])]                   
+                    else:
+                        response = [line for line in BioshadockDaemon.cli.build(
+                            fileobj=f, rm=True, tag=self.config['registry']['service'] + "/" + build['id'] + build_tag, nocache=True, timeout=self.config['services']['docker']['timeout'])]
                 except Exception as e:
                     log.error('Build error: ' + str(e))
                     response += [str(e)]
