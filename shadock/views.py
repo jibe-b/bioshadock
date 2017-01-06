@@ -865,6 +865,9 @@ def containers_new(request):
     if 'git' not in form or not form['git']:
         form['git'] = None
     repo_id = form['name']
+    repo_name = repo_id.split('/')
+    if len(repo_name) == 1:
+        return HTTPForbidden("Invalid repository name, must match X/Y")
     if user_can_push(user['id'], repo_id, request):
         request.registry.db_mongo['repository'].update({'id': repo_id},
                         {'$set': {'meta.short_description': form['description'],
@@ -1283,6 +1286,8 @@ def user_can_push(username, repository, request):
     user_repo = repository
     is_library = False
     repos = repository.split('/')
+    if len(repos) == 1:
+        return False
     if repos[0] == 'library':
         if not can_push_to_library(username, request):
             return False
