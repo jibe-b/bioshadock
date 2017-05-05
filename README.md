@@ -11,6 +11,10 @@ Other:
 
 mongodb, redis, elasticsearch
 
+## Licence
+
+Apache 2.0, see LICENSE.txt or http://www.apache.org/licenses/LICENSE-2.0.txt
+
 ## HTTPS
 
 server MUST run behind an HTTPS proxy server. Server should also add the header X-FORWARDED-PROTO and set to it to *https*, both to web interface and registry
